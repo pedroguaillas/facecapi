@@ -1,4 +1,4 @@
-<div style="position: absolute; margin-top: .5em;">
+<div>
     <table class="table-collapse">
         <tbody>
             <tr>

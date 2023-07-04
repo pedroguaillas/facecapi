@@ -97,8 +97,8 @@
     <table style="border-collapse: collapse;">
         <tbody>
             <tr>
-                <td class="mb-0">@include('vouchers.theme.company')</td>
-                <td>@include('vouchers.theme.information')</td>
+                <td style="width: 410px;" class="mb-0">@include('vouchers.theme.company')</td>
+                <td style="width: 340px;">@include('vouchers.theme.information')</td>
             </tr>
             @yield('body')
             <tr>

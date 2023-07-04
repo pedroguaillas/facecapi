@@ -3,7 +3,7 @@
 @section('body')
 <tr>
     <td colspan="2">
-        <div style="padding-top: .5em;">
+        <div style="padding-top: .7em;">
             <table style="width: 100%;" class="table table-sm">
                 <tbody class="widthboder">
                     <tr>
@@ -65,10 +65,10 @@
 <table style="width: 100%;">
     <tbody>
         <tr>
-            <td>
+            <td style="width: 350px;">
                 @include('vouchers.theme.adiinfopayment')
             </td>
-            <td>@include('vouchers.theme.total')</td>
+            <td style="width: 200px;">@include('vouchers.theme.total')</td>
         </tr>
     </tbody>
 </table>

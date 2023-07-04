@@ -1,4 +1,4 @@
-    <table>
+    <table style="width: 100%;">
         <tbody class="widthboder">
             <tr style="font-size: 16px;">
                 <td class="relleno">R.U.C.:</td>

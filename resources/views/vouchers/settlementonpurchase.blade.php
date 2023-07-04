@@ -55,10 +55,10 @@
 <table style="width: 100%;">
     <tbody>
         <tr>
-            <td style="width: 350px;">
+            <td style="width: 350px; position: relative;">
                 @include('vouchers.theme.payment')
             </td>
-            <td>@include('vouchers.theme.total')</td>
+            <td style="width: 200px;">@include('vouchers.theme.total')</td>
         </tr>
     </tbody>
 </table>

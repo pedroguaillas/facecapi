@@ -1,5 +1,5 @@
-<div style="width: 200px; margin-top: .5em;">
-    <table class="table-collapse">
+<div style="width: 100%;">
+    <table class="table-collapse" style="width: 100%; margin-top: .5em;">
         <tbody>
             <tr>
                 <td style=" width:160px;" class="relleno">SUBTOTAL IVA 12%</td>

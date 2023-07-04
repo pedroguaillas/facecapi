@@ -1,17 +1,13 @@
-<div style="position: absolute; margin-top: .5em;">
-
     @if(count($orderaditionals) > 0)
-    <table style="width: 100%; padding-bottom: .7em;" class="table-collapse">
-        <thead>
+    <table style="padding-bottom: .7em;" class="table-collapse">
+        <tbody>
             <tr>
                 <th style="padding: .5em 0em;" class="align-middle" colspan="2">INFORMACIÓN ADICIONAL</th>
             </tr>
-        </thead>
-        <tbody>
             @foreach($orderaditionals as $orderaditional)
             <tr>
                 <td style="padding: .3em .3em; width: 100px;">{{ $orderaditional->name }}</td>
-                <td style="padding: .3em .3em;">{{ $orderaditional->description }}</td>
+                <td style="padding: .3em .3em; width: 354px">{{ $orderaditional->description }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -30,4 +26,3 @@
             </tr>
         </tbody>
     </table>
-</div>

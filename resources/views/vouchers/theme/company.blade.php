@@ -1,8 +1,8 @@
-<div style="width: 365px;">
+<div style="width: 400px;">
     <div class="parent-img">
         <img src="{{ storage_path('app/logos/' .$company->logo_dir) }}" alt="Logo" style="width: auto; height: 125px;" />
     </div>
-    <table style="margin-top: .5em; width: 370px;">
+    <table style="margin-top: .5em; width: 100%;">
         <tbody class="widthboder">
             <tr>
                 <td class="relleno" style="text-align: center;" colspan="3">{{ $company->company }}</td>
