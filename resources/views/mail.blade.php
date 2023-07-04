@@ -1,0 +1,1 @@
+<p>Estimado, se adjunta el Comprobante Electrónico</h1>
