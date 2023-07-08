@@ -10,7 +10,7 @@
         "illuminate/mail": "^10.14",
         "laravel/lumen-framework": "^10.0",
         "league/flysystem-aws-s3-v3": "3.0",
-        "maatwebsite/excel": "^1.1",
+        "phpoffice/phpspreadsheet": "^1.29",
         "tymon/jwt-auth": "^2.0"
     },
     "require-dev": {

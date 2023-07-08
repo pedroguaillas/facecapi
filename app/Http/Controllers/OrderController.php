@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+// use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class OrderController extends Controller
 {
@@ -338,6 +340,24 @@ class OrderController extends Controller
 
     public function export($month)
     {
-        return Excel::download(new OrderExport($month), 'Ventas.xlsx');
+        $spreadsheet = new Spreadsheet();
+        $activeWorksheet = $spreadsheet->getActiveSheet();
+        $activeWorksheet->setCellValue('A1', 'Hello World !');
+
+        $filename = "C:/Users/AWCA/Documents/FACTURACIONELECTRONICA/CREADO/ventas.xlsx";
+
+        try {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($filename);
+            $content = file_get_contents($filename);
+
+            unlink($filename);
+
+            return $content;
+        } catch (Exception $e) {
+            exit($e->getMessage());
+        }
+
+        exit($content);
     }
 }
