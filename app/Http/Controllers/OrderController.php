@@ -16,6 +16,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 // use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -340,11 +341,56 @@ class OrderController extends Controller
 
     public function export($month)
     {
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
+        $branch = $company->branches->first();
+
+        $year = substr($month, 0, 4);
+        $month = substr($month, 5, 2);
+
         $spreadsheet = new Spreadsheet();
         $activeWorksheet = $spreadsheet->getActiveSheet();
-        $activeWorksheet->setCellValue('A1', 'Hello World !');
+        $activeWorksheet->setCellValue('A1', 'Identificación');
+        $activeWorksheet->setCellValue('B1', 'Cliente');
+        $activeWorksheet->setCellValue('C1', 'Comprobante');
+        $activeWorksheet->setCellValue('D1', 'Fecha');
+        $activeWorksheet->setCellValue('E1', 'Autorización');
+        $activeWorksheet->setCellValue('F1', 'N° de comprobante');
+        $activeWorksheet->setCellValue('G1', 'No IVA');
+        $activeWorksheet->setCellValue('H1', 'No grabada');
+        $activeWorksheet->setCellValue('I1', 'Grabada');
+        $activeWorksheet->setCellValue('J1', 'IVA');
+        $activeWorksheet->setCellValue('K1', 'Total');
+        $activeWorksheet->setCellValue('L1', 'Estado');
 
-        $filename = "C:/Users/AWCA/Documents/FACTURACIONELECTRONICA/CREADO/ventas.xlsx";
+        $orders = DB::table('orders AS o')
+            ->join('customers AS c', 'c.id', 'customer_id')
+            ->select('o.*', 'c.*')
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->where('o.branch_id', $branch->id)
+            ->get();
+
+        $row = 2;
+
+        foreach ($orders as $order) {
+            $activeWorksheet->setCellValue('A' . $row, $order->identication);
+            $activeWorksheet->setCellValue('B' . $row, $order->name);
+            $activeWorksheet->setCellValue('C' . $row,  $this->vtconvertion($order->voucher_type));
+            $activeWorksheet->setCellValue('D' . $row, $order->date);
+            $activeWorksheet->setCellValue('E' . $row, $order->authorization);
+            $activeWorksheet->setCellValue('F' . $row, $order->serie);
+            $activeWorksheet->setCellValue('G' . $row, $order->no_iva);
+            $activeWorksheet->setCellValue('H' . $row, $order->base0);
+            $activeWorksheet->setCellValue('I' . $row, $order->base12);
+            $activeWorksheet->setCellValue('J' . $row, $order->iva);
+            $activeWorksheet->setCellValue('K' . $row, $order->total);
+            $activeWorksheet->setCellValue('L' . $row, $order->state);
+            $row++;
+        }
+
+        $filename = Storage::path("ventas.xlsx");
 
         try {
             $writer = new Xlsx($spreadsheet);
@@ -359,5 +405,19 @@ class OrderController extends Controller
         }
 
         exit($content);
+    }
+
+    private function vtconvertion($type)
+    {
+        switch ($type) {
+            case 1:
+                return 'Factura';
+            case 2:
+                return 'Nota de venta';
+            case 3:
+                return 'Liquidación en compra';
+            case 4:
+                return 'Nota de crédito';
+        }
     }
 }
