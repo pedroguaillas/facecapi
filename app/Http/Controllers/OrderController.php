@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Customer;
-use App\Exports\OrderExport;
 use App\Http\Resources\CustomerResources;
 use App\Http\Resources\OrderResources;
 use App\Http\Resources\ProductResources;
@@ -366,7 +365,7 @@ class OrderController extends Controller
 
         $orders = DB::table('orders AS o')
             ->join('customers AS c', 'c.id', 'customer_id')
-            ->select('o.*', 'c.*')
+            ->select('o.*', 'c.identication', 'c.name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->where('o.branch_id', $branch->id)

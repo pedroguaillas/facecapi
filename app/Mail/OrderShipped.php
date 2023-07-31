@@ -2,13 +2,13 @@
 
 namespace App\Mail;
 
-use App\Company;
 use App\Http\Controllers\OrderController;
-use App\Order;
-use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailable;
+use App\Models\Company;
+use App\Models\Order;
 
 class OrderShipped extends Mailable
 {
@@ -44,6 +44,8 @@ class OrderShipped extends Mailable
 
         (new OrderController())->generatePdf($this->order->id);
         
+        // Falta especificar tipo de comprobante
+
         return $this->from($auth->email)
             ->subject('FACTURA ' . $this->order->serie . ' de ' . $company->company)
             ->view('mail')

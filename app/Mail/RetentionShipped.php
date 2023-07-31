@@ -2,13 +2,13 @@
 
 namespace App\Mail;
 
-use App\Company;
 use App\Http\Controllers\ShopController;
-use App\Shop;
-use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailable;
+use App\Models\Company;
+use App\Models\Shop;
 
 class RetentionShipped extends Mailable
 {

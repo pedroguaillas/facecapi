@@ -63,6 +63,8 @@ $app->configure('app');
 
 $app->configure('dompdf');
 
+$app->configure('mail');
+
 /*
 |--------------------------------------------------------------------------
 | Register Middleware
@@ -107,6 +109,9 @@ $app->register(\Barryvdh\DomPDF\ServiceProvider::class);
 
 // For add Excel
 // $app->register(Maatwebsite\Excel\ExcelServiceProvider::class);
+
+// Correo
+$app->register(\Illuminate\Mail\MailServiceProvider::class);
 
 $app->alias('mailer', Illuminate\Mail\Mailer::class);
 $app->alias('mailer', Illuminate\Contracts\Mail\Mailer::class);

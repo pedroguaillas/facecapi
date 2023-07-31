@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
+use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderShipped;
 use App\Mail\RetentionShipped;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Provider;
 use App\Models\Shop;
-use Illuminate\Support\Facades\Mail;
 
 class MailController extends Controller
 {
