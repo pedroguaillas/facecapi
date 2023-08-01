@@ -69,10 +69,8 @@ class SettlementOnPurchaseXmlController extends Controller
         //Signner Start --------------------------
         // Si existe el certificado electronico y se ha creado Xml
         if ($company->cert_dir !== null && file_exists(Storage::path($folder . $file))) {
-            // $public_path = '\';
-            // $public_path = '/var/www/apiteg';
-            //Local --------------------------
-            $public_path = 'E:\apps\test-apps\back-end-facec';
+            
+            $public_path = env('APP_URL');
 
             $cert = Storage::path('cert' . DIRECTORY_SEPARATOR . $company->cert_dir);
 

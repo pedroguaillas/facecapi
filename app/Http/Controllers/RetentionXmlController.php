@@ -67,7 +67,7 @@ class RetentionXmlController extends Controller
             // $public_path = '\';
             // $public_path = '/var/www/apiteg';
             //Local --------------------------
-            $public_path = 'E:\apps\test-apps\back-end-facec';
+            $public_path = env('APP_URL');
 
             $cert = Storage::path('cert' . DIRECTORY_SEPARATOR . $company->cert_dir);
 
