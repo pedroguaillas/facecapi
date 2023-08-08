@@ -25,6 +25,8 @@ class Order extends Model
         // Retencion
         'serie_retencion', 'date_retention',
         'authorization_retention',
+        // Metodo de pago
+        'pay_method',
         // Nota de Credito
         'date_order', 'serie_order', 'reason'
     ];

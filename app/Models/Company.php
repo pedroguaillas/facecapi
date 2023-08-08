@@ -14,7 +14,9 @@ class Company extends Model
         'enviroment_type', 'decimal',
 
         //Agregado las 2 columas el 25 de enero del 2022
-        'rimpe', 'inventory'
+        'rimpe', 'inventory',
+        // Metodo de pago
+        'pay_method',
     ];
 
     public function branches()

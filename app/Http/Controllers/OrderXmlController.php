@@ -76,7 +76,7 @@ class OrderXmlController extends Controller
         //Signner Start --------------------------
         // Si existe el certificado electronico y se ha creado Xml
         if ($company->cert_dir !== null && file_exists(Storage::path($folder . $file))) {
-            
+
             $public_path = env('APP_URL');
 
             $cert = Storage::path('cert' . DIRECTORY_SEPARATOR . $company->cert_dir);
@@ -264,7 +264,7 @@ class OrderXmlController extends Controller
 
         $string .= '<pagos>';
         $string .= '<pago>';
-        $string .= '<formaPago>20</formaPago>';
+        $string .= '<formaPago>' . str_pad($order->pay_method, 2, '0', STR_PAD_LEFT) . '</formaPago>';
         $string .= '<total>' . $order->total . '</total>';
         $string .= '</pago>';
         $string .= '</pagos>';

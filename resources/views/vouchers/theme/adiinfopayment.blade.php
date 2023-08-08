@@ -21,7 +21,7 @@
                 <th style="width: 70px;">Valor</th>
             </tr>
             <tr>
-                <td>OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO NACIONAL</td>
+                <td>{{ $payMethod }}</td>
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->total, 2) }}</td>
             </tr>
         </tbody>

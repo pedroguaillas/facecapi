@@ -17,7 +17,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-// use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -112,7 +111,13 @@ class OrderController extends Controller
         $company = Company::find($level->level_id);
         $branch = $company->branches->first();
 
-        if ($order = $branch->orders()->create($request->except(['products', 'send', 'aditionals']))) {
+        // Nuevo objeto para agregar metodo de pago
+        $input = $request->except(['products', 'send', 'aditionals']);
+
+        // Agregar la columna metodo de pago
+        $input['pay_method'] = $company->pay_method;
+
+        if ($order = $branch->orders()->create($input)) {
 
             // Registro de los Items de la Orden
             $products = $request->get('products');
@@ -228,7 +233,8 @@ class OrderController extends Controller
 
         switch ($movement->voucher_type) {
             case 1:
-                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals'));
+                $payMethod = $this->payMethod($movement->pay_method);
+                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals', 'payMethod'));
                 break;
             case 4:
                 $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'movement_items', 'orderaditionals'));
@@ -236,6 +242,38 @@ class OrderController extends Controller
         }
 
         return $pdf->stream();
+    }
+
+    private function payMethod(int $pm)
+    {
+        $result = '';
+        switch ($pm) {
+            case 1:
+                $result = 'SIN UTILIZACION DEL SISTEMA FINANCIERO';
+                break;
+            case 15:
+                $result = 'COMPENSACIÓN DE DEUDAS';
+                break;
+            case 16:
+                $result = 'TARJETA DE DÉBITO';
+                break;
+            case 17:
+                $result = 'DINERO ELECTRÓNICO';
+                break;
+            case 18:
+                $result = 'TARJETA PREPAGO';
+                break;
+            case 19:
+                $result = 'TARJETA DE CRÉDITO';
+                break;
+            case 20:
+                $result = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
+                break;
+            case 21:
+                $result = 'ENDOSO DE TÍTULOS';
+                break;
+        }
+        return $result;
     }
 
     public function printfPdf($id)

@@ -159,7 +159,7 @@ class CompanyController extends Controller
         }
 
         $input['accounting'] = $request->accounting === 'true' ? 1 : 0;
-        $input['rimpe'] = $request->rimpe === 'true' ? 1 : 0;
+        // $input['rimpe'] = $request->rimpe === 'true' ? 1 : 0;
 
         if ($company->update($input)) {
             return response()->json(['message' => 'Actualizado compañia', 'inputs' => $input]);
