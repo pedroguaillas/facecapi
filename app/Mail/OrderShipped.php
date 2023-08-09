@@ -43,22 +43,20 @@ class OrderShipped extends Mailable
         $company = Company::find($level->level_id);
 
         (new OrderController())->generatePdf($this->order->id);
-        
-        // Falta especificar tipo de comprobante
 
         return $this->from($auth->email)
-            ->subject('FACTURA ' . $this->order->serie . ' de ' . $company->company)
+            ->subject(($this->order->voucher_type == 1 ? 'FACTURA ' : 'NOTA DE CRÉDITO ') . $this->order->serie . ' de ' . $company->company)
             ->view('mail')
             ->attachFromStorage(
                 str_replace('.xml', '.pdf', $this->order->xml),
-                'FAC-' . $this->order->serie . '.pdf',
+                ($this->order->voucher_type == 1 ? 'FAC-' : 'NC-') . $this->order->serie . '.pdf',
                 [
                     'mime' => 'application/pdf'
                 ]
             )
             ->attachFromStorage(
                 $this->order->xml,
-                'FAC-' . $this->order->serie . '.xml',
+                ($this->order->voucher_type == 1 ? 'FAC-' : 'NC-') . $this->order->serie . '.xml',
                 [
                     'mime' => 'application/xml'
                 ]

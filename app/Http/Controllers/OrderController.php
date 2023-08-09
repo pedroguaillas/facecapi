@@ -276,6 +276,7 @@ class OrderController extends Controller
         return $result;
     }
 
+    // PDF tamaño pequeño a imprimir
     public function printfPdf($id)
     {
         $movement = Order::join('customers AS c', 'orders.customer_id', 'c.id')
@@ -318,7 +319,8 @@ class OrderController extends Controller
 
         switch ($movement->voucher_type) {
             case 1:
-                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals'));
+                $payMethod = $this->payMethod($movement->pay_method);
+                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals', 'payMethod'));
                 break;
             case 4:
                 $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'movement_items', 'orderaditionals'));

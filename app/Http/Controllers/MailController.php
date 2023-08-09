@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Provider;
 use App\Models\Shop;
+use Illuminate\Support\Facades\Storage;
 
 class MailController extends Controller
 {
@@ -23,6 +24,9 @@ class MailController extends Controller
         $order->update([
             'send_mail' => true
         ]);
+
+        // Eliminar PDF
+        Storage::delete(str_replace('.xml', '.pdf', $order->xml));
     }
 
     // Enviar retencion por correo
@@ -36,5 +40,8 @@ class MailController extends Controller
         $shop->update([
             'send_mail_retention' => true
         ]);
+
+        // Eliminar PDF
+        Storage::delete(str_replace('.xml', '.pdf', $shop->xml_retention));
     }
 }
