@@ -159,7 +159,7 @@ class OrderXmlController extends Controller
             $string .= "<codigoPorcentaje>$tax->percentageCode</codigoPorcentaje>";
             $string .= "<baseImponible>$tax->base</baseImponible>";
             // $string .= "<tarifa>" . $tax->percentage . "</tarifa>";
-            $string .= "<valor>$tax->value</valor>";
+            $string .= "<valor>" . ($tax->percentage === 12 ? $order->iva : 0) . "</valor>";
             $string .= "</totalImpuesto>";
         }
         $string .= '</totalConImpuestos>';
@@ -253,7 +253,7 @@ class OrderXmlController extends Controller
             $string .= "<codigoPorcentaje>" . $tax->percentageCode . "</codigoPorcentaje>";
             $string .= "<baseImponible>" . number_format($tax->base, 2, '.', '') . "</baseImponible>";
             $string .= "<tarifa>" . $tax->percentage . "</tarifa>";
-            $string .= "<valor>" . $tax->value . "</valor>";
+            $string .= "<valor>" . ($tax->percentage === 12 ? $order->iva : 0) . "</valor>";
             $string .= "</totalImpuesto>";
         }
         $string .= '</totalConImpuestos>';
@@ -334,13 +334,15 @@ class OrderXmlController extends Controller
             if ($gruping !== -1) {
                 $aux2 = $taxes[$gruping];
                 $aux2->base += $total;
-                $aux2->value += round($percentage * $total * .01, 2);
+                // No es necesario calcular porque ya viene calculado del Front End
+                // $aux2->value += round($percentage * $total * .01, 2);
             } else {
                 $aux = [
                     'percentageCode' => $tax->iva,
                     'percentage' => $percentage,
                     'base' => $total,
-                    'value' => round($percentage * $total * .01, 2)
+                    // No es necesario calcular porque ya viene calculado del Front End
+                    // 'value' => round($percentage * $total * .01, 2)
                 ];
                 $aux = json_encode($aux);
                 $aux = json_decode($aux);
