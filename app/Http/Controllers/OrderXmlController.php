@@ -192,7 +192,7 @@ class OrderXmlController extends Controller
             $string .= "<codigo>2</codigo>";
             $string .= "<codigoPorcentaje>$detail->iva</codigoPorcentaje>";
             $string .= "<tarifa>" . ($detail->iva === 2 ? 12 : 0) . "</tarifa>";
-            $string .= "<baseImponible>$total</baseImponible>";
+            $string .= "<baseImponible>" . round($total, 2) . "</baseImponible>";
             $string .= "<valor>" . round($percentage * $total * .01, 2) . "</valor>";
             $string .= "</impuesto>";
             // }
