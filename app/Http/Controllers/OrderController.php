@@ -414,11 +414,11 @@ class OrderController extends Controller
         $row = 2;
 
         foreach ($orders as $order) {
-            $activeWorksheet->setCellValue('A' . $row, $order->identication);
+            $activeWorksheet->getCell('A' . $row)->setValueExplicit($order->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $activeWorksheet->setCellValue('B' . $row, $order->name);
             $activeWorksheet->setCellValue('C' . $row,  $this->vtconvertion($order->voucher_type));
             $activeWorksheet->setCellValue('D' . $row, $order->date);
-            $activeWorksheet->setCellValue('E' . $row, $order->authorization);
+            $activeWorksheet->getCell('E' . $row)->setValueExplicit($order->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $activeWorksheet->setCellValue('F' . $row, $order->serie);
             $activeWorksheet->setCellValue('G' . $row, $order->no_iva);
             $activeWorksheet->setCellValue('H' . $row, $order->base0);

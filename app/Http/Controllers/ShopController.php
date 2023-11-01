@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
-use App\Exports\ShopExport;
 use App\Http\Resources\ProductResources;
 use App\Http\Resources\ProviderResources;
 use App\Http\Resources\ShopResources;
@@ -16,8 +15,10 @@ use App\Models\Tax;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ShopController extends Controller
 {
@@ -361,6 +362,83 @@ class ShopController extends Controller
 
     public function export($month)
     {
-        return Excel::download(new ShopExport($month), 'Compras.xlsx');
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
+        $branch = $company->branches->first();
+
+        $year = substr($month, 0, 4);
+        $month = substr($month, 5, 2);
+
+        $spreadsheet = new Spreadsheet();
+        $activeWorksheet = $spreadsheet->getActiveSheet();
+        $activeWorksheet->setCellValue('A1', 'Identificación');
+        $activeWorksheet->setCellValue('B1', 'Proveedor');
+        $activeWorksheet->setCellValue('C1', 'Comprobante');
+        $activeWorksheet->setCellValue('D1', 'Fecha');
+        $activeWorksheet->setCellValue('E1', 'Autorización');
+        $activeWorksheet->setCellValue('F1', 'N° de comprobante');
+        $activeWorksheet->setCellValue('G1', 'No IVA');
+        $activeWorksheet->setCellValue('H1', 'No grabada');
+        $activeWorksheet->setCellValue('I1', 'Grabada');
+        $activeWorksheet->setCellValue('J1', 'IVA');
+        $activeWorksheet->setCellValue('K1', 'Total');
+        $activeWorksheet->setCellValue('L1', 'Estado L/C');
+
+        $shops = DB::table('shops AS s')
+            ->join('providers AS p', 'p.id', 'provider_id')
+            ->select('s.*', 'p.identication', 'p.name')
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->where('s.branch_id', $branch->id)
+            ->get();
+
+        $row = 2;
+
+        foreach ($shops as $shop) {
+            $activeWorksheet->getCell('A' . $row)->setValueExplicit($shop->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue('B' . $row, $shop->name);
+            $activeWorksheet->setCellValue('C' . $row, $this->vtconvertion($shop->voucher_type));
+            $activeWorksheet->setCellValue('D' . $row, $shop->date);
+            $activeWorksheet->getCell('E' . $row)->setValueExplicit($shop->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue('F' . $row, $shop->serie);
+            $activeWorksheet->setCellValue('G' . $row, $shop->no_iva);
+            $activeWorksheet->setCellValue('H' . $row, $shop->base0);
+            $activeWorksheet->setCellValue('I' . $row, $shop->base12);
+            $activeWorksheet->setCellValue('J' . $row, $shop->iva);
+            $activeWorksheet->setCellValue('K' . $row, $shop->total);
+            $activeWorksheet->setCellValue('L' . $row, $shop->state);
+            $row++;
+        }
+
+        $filename = Storage::path("compras.xlsx");
+
+        try {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($filename);
+            $content = file_get_contents($filename);
+
+            unlink($filename);
+
+            return $content;
+        } catch (Exception $e) {
+            exit($e->getMessage());
+        }
+
+        exit($content);
+    }
+
+    private function vtconvertion($type)
+    {
+        switch ($type) {
+            case 1:
+                return 'Factura';
+            case 2:
+                return 'Nota de venta';
+            case 3:
+                return 'Liquidación en compra';
+            case 4:
+                return 'Nota de crédito';
+        }
     }
 }
