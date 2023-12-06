@@ -405,7 +405,7 @@ class OrderController extends Controller
 
         $orders = DB::table('orders AS o')
             ->join('customers AS c', 'c.id', 'customer_id')
-            ->select('o.*', 'c.identication', 'c.name')
+            ->select('o.voucher_type', 'o.date', 'o.authorization', 'o.serie', 'o.no_iva', 'o.base0', 'o.base12', 'o.iva', 'o.total', 'o.state', 'c.identication', 'c.name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->where('o.branch_id', $branch->id)

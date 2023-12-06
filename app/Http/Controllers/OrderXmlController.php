@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderAditional;
 use App\Models\OrderItem;
 use App\StaticClasses\VoucherStates;
+use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 
 class OrderXmlController extends Controller
 {
@@ -121,6 +122,8 @@ class OrderXmlController extends Controller
                 break;
         }
 
+        $nombrecliente = str_replace("&", "Y", $order->name);
+
         $string = '';
         $string .= '<?xml version="1.0" encoding="UTF-8"?>';
         $string .= '<notaCredito id="comprobante" version="1.' . ($company->decimal > 2 ? 1 : 0) . '.0">';
@@ -132,7 +135,7 @@ class OrderXmlController extends Controller
         $date = new \DateTime($order->date);
         $string .= '<fechaEmision>' . $date->format('d/m/Y') . '</fechaEmision>';
         $string .= "<tipoIdentificacionComprador>$typeId</tipoIdentificacionComprador>";
-        $string .= "<razonSocialComprador>$order->name</razonSocialComprador>";
+        $string .= "<razonSocialComprador>$nombrecliente</razonSocialComprador>";
         $string .= "<identificacionComprador>$buyer_id</identificacionComprador>";
         $string .= '<obligadoContabilidad>' . ($company->accounting ? 'SI' : 'NO') . '</obligadoContabilidad>';
         // $string .= '<direccionComprador>' . $order->address . '</direccionComprador>';
@@ -239,7 +242,7 @@ class OrderXmlController extends Controller
         $string .= '<obligadoContabilidad>' . ($company->accounting ? 'SI' : 'NO') . '</obligadoContabilidad>';
         $string .= "<tipoIdentificacionComprador>$typeId</tipoIdentificacionComprador>";
         $string .= $order->guia !== null ? '<guiaRemision>' . $order->guia . '</guiaRemision>' : null;
-        $string .= '<razonSocialComprador>' . $order->name . '</razonSocialComprador>';
+        $string .= '<razonSocialComprador>' . str_replace("&", "Y", $order->name) . '</razonSocialComprador>';
         $string .= '<identificacionComprador>' . $buyer_id . '</identificacionComprador>';
         $string .= $order->address !== null ? '<direccionComprador>' . $order->address . '</direccionComprador>' : null;
         $string .= '<totalSinImpuestos>' . $order->sub_total . '</totalSinImpuestos>';

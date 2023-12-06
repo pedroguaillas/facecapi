@@ -126,7 +126,7 @@ class RetentionXmlController extends Controller
         $string .= "<tipoIdentificacionSujetoRetenido>$typeId</tipoIdentificacionSujetoRetenido>";
         $string .= $typeId === 'pasaporte' ? '<tipoSujetoRetenido>01</tipoSujetoRetenido>' : null;
         $string .= "<parteRel>NO</parteRel>";
-        $string .= "<razonSocialSujetoRetenido>$shop->name</razonSocialSujetoRetenido>";
+        $string .= "<razonSocialSujetoRetenido>" . str_replace('&', 'Y', $shop->name) . "</razonSocialSujetoRetenido>";
         $string .= "<identificacionSujetoRetenido>$buyer_id</identificacionSujetoRetenido>";
         $string .= '<periodoFiscal>' . $date->format('m/Y') . '</periodoFiscal>';
 

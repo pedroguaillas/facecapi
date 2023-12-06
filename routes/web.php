@@ -17,7 +17,7 @@ $router->get('/', function () use ($router) {
     return $router->app->version();
 });
 
-$router->get('/key', function() {
+$router->get('/key', function () {
     return \Illuminate\Support\Str::random(32);
 });
 
@@ -169,6 +169,7 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->get('customers/{id}/edit', 'CustomerController@edit');
     $router->put('customers/{id}', 'CustomerController@update');
     $router->post('customers_import_csv', 'CustomerController@importCsv');
+    $router->get('customers/export', 'CustomerController@export');
 
     // Proveedores
     $router->post('providerlist', 'ProviderController@providerlist');
@@ -183,4 +184,3 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->get('carriers/{id}/edit', 'CarrierController@edit');
     $router->put('carriers/{id}', 'CarrierController@update');
 });
-

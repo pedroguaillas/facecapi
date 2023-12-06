@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Order;
@@ -23,29 +22,33 @@ class DashboardController extends Controller
         $active = $company->active_voucher;
         $expired = $company->expired;
 
-        $orders = DB::table('orders')->select(DB::raw("SUM(total) as ingreso, DATE_FORMAT(date, '%m-%Y') AS name"))
+        $orders = Order::selectRaw("SUM(total) as ingreso, DATE_FORMAT(date, '%m-%Y') AS name")
             ->where('branch_id', $branch->id)
-            ->groupBy('name')->get();
+            ->groupBy('name')
+            ->orderBy('name', 'desc')
+            ->take(5)->get();
 
-        $shops = DB::table('shops')->select(DB::raw("SUM(total) as egreso, DATE_FORMAT(date, '%m-%Y') AS name"))
+        $shops = Shop::selectRaw("SUM(total) as egreso, DATE_FORMAT(date, '%m-%Y') AS name")
             ->where('branch_id', $branch->id)
-            ->groupBy('name')->get();
+            ->groupBy('name')
+            ->orderBy('name', 'desc')
+            ->take(5)->get();
 
-        $count_orders = Order::where('branch_id', $branch->id)->get();
-        $count_shops = Shop::where('branch_id', $branch->id)->get();
+        $count_orders = Order::where('branch_id', $branch->id)->count();
+        $count_shops = Shop::where('branch_id', $branch->id)->count();
 
-        $count_customers = Customer::where('branch_id', $branch->id)->get();
-        $count_providers = Provider::where('branch_id', $branch->id)->get();
+        $count_customers = Customer::where('branch_id', $branch->id)->count();
+        $count_providers = Provider::where('branch_id', $branch->id)->count();
 
         return response()->json([
             'active' => $active,
             'expired' => $expired,
             'orders' => $orders,
             'shops' => $shops,
-            'count_orders' => $count_orders->count(),
-            'count_shops' => $count_shops->count(),
-            'count_customers' => $count_customers->count() - 1,
-            'count_providers' => $count_providers->count(),
+            'count_orders' => $count_orders,
+            'count_shops' => $count_shops,
+            'count_customers' => $count_customers - 1,
+            'count_providers' => $count_providers,
         ]);
     }
 }

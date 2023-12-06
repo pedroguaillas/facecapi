@@ -387,7 +387,7 @@ class ShopController extends Controller
 
         $shops = DB::table('shops AS s')
             ->join('providers AS p', 'p.id', 'provider_id')
-            ->select('s.*', 'p.identication', 'p.name')
+            ->select('s.voucher_type', 's.date', 's.authorization', 's.serie', 's.no_iva', 's.base0', 's.base12', 's.iva', 's.total', 's.state', 'p.identication', 'p.name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->where('s.branch_id', $branch->id)
