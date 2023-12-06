@@ -22,16 +22,16 @@ class DashboardController extends Controller
         $active = $company->active_voucher;
         $expired = $company->expired;
 
-        $orders = Order::selectRaw("SUM(total) as ingreso, DATE_FORMAT(date, '%m-%Y') AS name")
+        $orders = Order::selectRaw("SUM(total) as ingreso, DATE_FORMAT(date, '%m-%Y') AS name, DATE_FORMAT(date, 'Ym') AS orden")
             ->where('branch_id', $branch->id)
-            ->groupBy('name')
-            ->orderBy('name', 'desc')
+            ->groupBy('name', 'orden')
+            ->orderBy('orden', 'desc')
             ->take(5)->get();
 
-        $shops = Shop::selectRaw("SUM(total) as egreso, DATE_FORMAT(date, '%m-%Y') AS name")
+        $shops = Shop::selectRaw("SUM(total) as egreso, DATE_FORMAT(date, '%m-%Y') AS name, DATE_FORMAT(date, 'Ym') AS orden")
             ->where('branch_id', $branch->id)
-            ->groupBy('name')
-            ->orderBy('name', 'desc')
+            ->groupBy('name', 'orden')
+            ->orderBy('orden', 'desc')
             ->take(5)->get();
 
         $count_orders = Order::where('branch_id', $branch->id)->count();
