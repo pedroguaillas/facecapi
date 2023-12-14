@@ -9,7 +9,6 @@ use App\Models\Order;
 use App\Models\OrderAditional;
 use App\Models\OrderItem;
 use App\StaticClasses\VoucherStates;
-use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 
 class OrderXmlController extends Controller
 {
@@ -36,6 +35,10 @@ class OrderXmlController extends Controller
             ->select('c.identication', 'c.name', 'c.address', 'c.type_identification', 'orders.*')
             ->where('orders.id', $id)
             ->first();
+
+        if ($order->state === 'DEVUELTA' && $order->extra_detail === 'CLAVE ACCESO REGISTRADA.') {
+            (new WSSriOrderController())->authorize($id);
+        }
 
         $order_items = OrderItem::join('products AS p', 'p.id', 'order_items.product_id')
             ->where('order_id', $id)

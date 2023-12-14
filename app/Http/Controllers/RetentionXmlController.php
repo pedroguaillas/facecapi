@@ -31,9 +31,12 @@ class RetentionXmlController extends Controller
 
         $shop = Shop::join('providers AS p', 'p.id', 'shops.provider_id')
             ->select('p.*', 'shops.*')
-            // ->select('p.identication', 'p.name', 'p.address', 'p.phone', 'p.email', 'shops.*')
             ->where('shops.id', $id)
             ->first();
+
+        if ($shop->state_retencion === 'DEVUELTA' && $shop->extra_detail_retention === 'CLAVE ACCESO REGISTRADA') {
+            (new WSSriRetentionController())->authorize($id);
+        }
 
         if ($shop->serie_retencion && $shop->date_retention) {
 
