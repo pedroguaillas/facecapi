@@ -38,6 +38,7 @@ class OrderXmlController extends Controller
 
         if ($order->state === 'DEVUELTA' && $order->extra_detail === 'CLAVE ACCESO REGISTRADA.') {
             (new WSSriOrderController())->authorize($id);
+            return;
         }
 
         $order_items = OrderItem::join('products AS p', 'p.id', 'order_items.product_id')

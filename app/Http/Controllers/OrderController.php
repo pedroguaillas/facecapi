@@ -15,7 +15,6 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -33,12 +32,16 @@ class OrderController extends Controller
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
             ->select('orders.*', 'c.name', 'c.email')
+            ->orderBy('orders.created_at', 'DESC')
             ->where('orders.branch_id', $branch->id)
             ->where(function ($query) use ($search) {
                 return $query->where('orders.serie', 'LIKE', "%$search%")
                     ->orWhere('c.name', 'LIKE', "%$search%");
-            })
-            ->orderBy('orders.created_at', 'DESC');
+            });
+
+        if ($request->has('date')) {
+            $orders->whereDate('date', $request->date);
+        }
 
         return OrderResources::collection($orders->paginate());
     }
@@ -403,12 +406,11 @@ class OrderController extends Controller
         $activeWorksheet->setCellValue('K1', 'Total');
         $activeWorksheet->setCellValue('L1', 'Estado');
 
-        $orders = DB::table('orders AS o')
-            ->join('customers AS c', 'c.id', 'customer_id')
-            ->select('o.voucher_type', 'o.date', 'o.authorization', 'o.serie', 'o.no_iva', 'o.base0', 'o.base12', 'o.iva', 'o.total', 'o.state', 'c.identication', 'c.name')
+        $orders = Order::join('customers AS c', 'c.id', 'customer_id')
+            ->select('voucher_type', 'date', 'authorization', 'serie', 'no_iva', 'base0', 'base12', 'iva', 'total', 'orders.state', 'identication', 'name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
-            ->where('o.branch_id', $branch->id)
+            ->where('orders.branch_id', $branch->id)
             ->get();
 
         $row = 2;

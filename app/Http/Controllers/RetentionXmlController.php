@@ -36,6 +36,7 @@ class RetentionXmlController extends Controller
 
         if ($shop->state_retencion === 'DEVUELTA' && $shop->extra_detail_retention === 'CLAVE ACCESO REGISTRADA') {
             (new WSSriRetentionController())->authorize($id);
+            return;
         }
 
         if ($shop->serie_retencion && $shop->date_retention) {
@@ -67,9 +68,7 @@ class RetentionXmlController extends Controller
         //Signner Start --------------------------
         // Si existe el certificado electronico y se ha creado Xml
         if ($company->cert_dir !== null && file_exists(Storage::path($folder . $file))) {
-            // $public_path = '\';
-            // $public_path = '/var/www/apiteg';
-            //Local --------------------------
+
             $public_path = env('APP_URL');
 
             $cert = Storage::path('cert' . DIRECTORY_SEPARATOR . $company->cert_dir);
