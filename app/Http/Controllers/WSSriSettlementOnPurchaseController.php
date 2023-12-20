@@ -133,9 +133,9 @@ class WSSriSettlementOnPurchaseController
                         $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $toPath = str_replace($order->state, VoucherStates::REJECTED, $order->xml);
-                    Storage::put($toPath, $autorizacion);
-                    $order->xml = $toPath;
+                    // $toPath = str_replace($order->state, VoucherStates::REJECTED, $order->xml);
+                    // Storage::put($toPath, $autorizacion);
+                    // $order->xml = $toPath;
                     $order->state = VoucherStates::REJECTED;
                     $order->extra_detail = $message;
                     $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);

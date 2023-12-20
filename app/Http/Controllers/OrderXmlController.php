@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderAditional;
 use App\Models\OrderItem;
 use App\StaticClasses\VoucherStates;
+use stdClass;
 
 class OrderXmlController extends Controller
 {
@@ -31,7 +32,7 @@ class OrderXmlController extends Controller
             return;
         }
 
-        $order = Order::join('customers AS c', 'c.id', 'orders.customer_id')
+        $order = Order::join('customers AS c', 'c.id', 'customer_id')
             ->select('c.identication', 'c.name', 'c.address', 'c.type_identification', 'orders.*')
             ->where('orders.id', $id)
             ->first();
@@ -41,7 +42,8 @@ class OrderXmlController extends Controller
             return;
         }
 
-        $order_items = OrderItem::join('products AS p', 'p.id', 'order_items.product_id')
+        $order_items = OrderItem::select('quantity', 'price', 'discount', 'order_items.ice AS valice', 'code AS codeproduct', 'name', 'iva', 'p.ice AS codice')
+            ->join('products AS p', 'p.id', 'product_id')
             ->where('order_id', $id)
             ->get();
 
@@ -160,15 +162,19 @@ class OrderXmlController extends Controller
         $string .= '<moneda>DOLAR</moneda>';
         // Aplied only tax to IVA, NOT aplied to IRBPNR % Imp. al Cons Esp, require add
         $string .= '<totalConImpuestos>';
+
         foreach ($this->grupingTaxes($order_items) as $tax) {
             $string .= "<totalImpuesto>";
-            $string .= "<codigo>2</codigo>";    // Aplied only tax to IVA
+            $string .= "<codigo>$tax->code</codigo>";    // 2 IVA - 3 ICE
             $string .= "<codigoPorcentaje>$tax->percentageCode</codigoPorcentaje>";
-            $string .= "<baseImponible>$tax->base</baseImponible>";
-            // $string .= "<tarifa>" . $tax->percentage . "</tarifa>";
-            $string .= "<valor>" . ($tax->percentage === 12 ? $order->iva : 0) . "</valor>";
+            $string .= "<baseImponible>" . number_format($tax->base, 2, '.', '') . "</baseImponible>";
+            // Solo en caso del impuesto al IVA poner la <tarifa>
+            // $string .= "<tarifa>$tax->percentage</tarifa>";
+            // El valor varia en dependecia del impuesto
+            $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentage === 12 ? $order->iva : 0) : $order->ice) . "</valor>";
             $string .= "</totalImpuesto>";
         }
+
         $string .= '</totalConImpuestos>';
 
         $string .= "<motivo>$order->reason</motivo>";
@@ -177,16 +183,14 @@ class OrderXmlController extends Controller
 
         $string .= '<detalles>';
         foreach ($order_items as $detail) {
-            // $string .= $detail->__toXml();
             $sub_total = $detail->quantity * $detail->price;
             $discount = round($sub_total * $detail->discount * .01, 2);
-            $total = $sub_total - $discount;
+            $total = $sub_total + $detail->valice - $discount;
             $percentage = $detail->iva === 2 ? 12 : 0;
 
             $string .= "<detalle>";
 
-            // $string .= "<codigoInterno>" . $detail->code . "</codigoInterno>";
-            $string .= "<codigoAdicional>$detail->code</codigoAdicional>";
+            $string .= "<codigoInterno>$detail->codeproduct</codigoInterno>";
             $string .= "<descripcion>$detail->name</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
@@ -194,19 +198,31 @@ class OrderXmlController extends Controller
             $string .= "<precioTotalSinImpuesto>" . round($sub_total, 2) . "</precioTotalSinImpuesto>";
 
             $string .= "<impuestos>";
-            // foreach ($this->taxes as $tax) {
+
             $string .= "<impuesto>";
             $string .= "<codigo>2</codigo>";
             $string .= "<codigoPorcentaje>$detail->iva</codigoPorcentaje>";
-            $string .= "<tarifa>" . ($detail->iva === 2 ? 12 : 0) . "</tarifa>";
+            $string .= "<tarifa>$percentage</tarifa>";
             $string .= "<baseImponible>" . round($total, 2) . "</baseImponible>";
             $string .= "<valor>" . round($percentage * $total * .01, 2) . "</valor>";
             $string .= "</impuesto>";
-            // }
+
+            // Impuesto del Monto ICE opcional
+            if ($detail->codice) {
+                $string .= "<impuesto>";
+                $string .= "<codigo>3</codigo>";    // Aplica solo para impuesto del Monto ICE
+                $string .= "<codigoPorcentaje>$detail->codice</codigoPorcentaje>";
+                $string .= "<tarifa>0</tarifa>";
+                $string .= "<baseImponible>" . number_format($sub_total, 2, '.', '') . "</baseImponible>";
+                $string .= "<valor>$detail->valice</valor>";
+                $string .= "</impuesto>";
+            }
+
             $string .= "</impuestos>";
 
             $string .= "</detalle>";
         }
+
         $string .= '</detalles>';
 
         $string .= '</notaCredito>';
@@ -256,13 +272,16 @@ class OrderXmlController extends Controller
         $string .= '<totalConImpuestos>';
         foreach ($this->grupingTaxes($order_items) as $tax) {
             $string .= "<totalImpuesto>";
-            $string .= "<codigo>2</codigo>";    // Aplied only tax to IVA
-            $string .= "<codigoPorcentaje>" . $tax->percentageCode . "</codigoPorcentaje>";
+            $string .= "<codigo>$tax->code</codigo>";    // 2 IVA - 3 ICE
+            $string .= "<codigoPorcentaje>$tax->percentageCode</codigoPorcentaje>";
             $string .= "<baseImponible>" . number_format($tax->base, 2, '.', '') . "</baseImponible>";
-            $string .= "<tarifa>" . $tax->percentage . "</tarifa>";
-            $string .= "<valor>" . ($tax->percentage === 12 ? $order->iva : 0) . "</valor>";
+            // Solo en caso del impuesto al IVA poner la <tarifa>
+            $string .= $tax->code === 2 ? "<tarifa>$tax->percentage</tarifa>" : null;
+            // El valor varia en dependecia del impuesto
+            $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentage === 12 ? $order->iva : 0) : $order->ice) . "</valor>";
             $string .= "</totalImpuesto>";
         }
+
         $string .= '</totalConImpuestos>';
 
         $string .= '<propina>0</propina>';
@@ -282,13 +301,13 @@ class OrderXmlController extends Controller
         foreach ($order_items as $detail) {
             $sub_total = $detail->quantity * $detail->price;
             $discount = round($sub_total * $detail->discount * .01, 2);
-            $total = round($sub_total - $discount, 2);
+            $total = round($sub_total + $detail->valice - $discount, 2);
             $percentage = $detail->iva === 2 ? 12 : 0;
 
             $string .= "<detalle>";
 
-            $string .= "<codigoPrincipal>" . $detail->code . "</codigoPrincipal>";
-            $string .= "<codigoAuxiliar>" . $detail->code . "</codigoAuxiliar>";
+            $string .= "<codigoPrincipal>" . $detail->codeproduct . "</codigoPrincipal>";
+            // $string .= "<codigoAuxiliar>" . $detail->codeproduct . "</codigoAuxiliar>";
             $string .= "<descripcion>" . $detail->name . "</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
@@ -296,15 +315,27 @@ class OrderXmlController extends Controller
             $string .= "<precioTotalSinImpuesto>" . round($sub_total, 2) . "</precioTotalSinImpuesto>";
 
             $string .= "<impuestos>";
-            // foreach ($this->taxes as $tax) {
+
+            // Impuesto obligatorio
             $string .= "<impuesto>";
             $string .= "<codigo>2</codigo>";
             $string .= "<codigoPorcentaje>" . $detail->iva . "</codigoPorcentaje>";
-            $string .= "<tarifa>" . ($detail->iva === 2 ? 12 : 0) . "</tarifa>";
+            $string .= "<tarifa>$percentage</tarifa>";
             $string .= "<baseImponible>" . round($total, 2) . "</baseImponible>";
             $string .= "<valor>" . round($percentage * $total * .01, 2) . "</valor>";
             $string .= "</impuesto>";
-            // }
+
+            // Impuesto del Monto ICE opcional
+            if ($detail->codice) {
+                $string .= "<impuesto>";
+                $string .= "<codigo>3</codigo>";    // Aplica solo para impuesto del Monto ICE
+                $string .= "<codigoPorcentaje>$detail->codice</codigoPorcentaje>";
+                $string .= "<tarifa>0</tarifa>";
+                $string .= "<baseImponible>" . number_format($sub_total, 2, '.', '') . "</baseImponible>";
+                $string .= "<valor>$detail->valice</valor>";
+                $string .= "</impuesto>";
+            }
+
             $string .= "</impuestos>";
 
             $string .= "</detalle>";
@@ -334,26 +365,44 @@ class OrderXmlController extends Controller
         foreach ($order_items as $tax) {
             $sub_total = number_format($tax->quantity * $tax->price, 2, '.', '');
             $discount = round($sub_total * $tax->discount * .01, 2);
-            $total = $sub_total - $discount;
+            $total = $sub_total + $tax->valice - $discount;
             $percentage = $tax->iva === 2 ? 12 : 0;
 
+            $tax->code = 2;
+            $tax->percentageCode = $tax->iva;
+
+            // Impuesto al IVA
             $gruping = $this->grupingExist($taxes, $tax);
             if ($gruping !== -1) {
-                $aux2 = $taxes[$gruping];
-                $aux2->base += $total;
-                // No es necesario calcular porque ya viene calculado del Front End
-                // $aux2->value += round($percentage * $total * .01, 2);
+                // Solo sumar el total a la base
+                $taxes[$gruping]->base += $total;
             } else {
                 $aux = [
+                    'code' => 2, //Impuesto al IVA
+                    // percentageCode: 0 0% - 2 12$ - 6 No objeto de IVA
                     'percentageCode' => $tax->iva,
                     'percentage' => $percentage,
-                    'base' => $total,
-                    // No es necesario calcular porque ya viene calculado del Front End
-                    // 'value' => round($percentage * $total * .01, 2)
+                    'base' => $total
                 ];
                 $aux = json_encode($aux);
                 $aux = json_decode($aux);
                 $taxes[] = $aux;
+            }
+
+            // Impuesto al ICE
+            if ($tax->codice !== null && $tax->valice > 0) {
+                $taxIce = new stdClass;
+                $taxIce->code = 3;
+                $taxIce->percentageCode = $tax->codice;
+
+                $gruping = $this->grupingExist($taxes, $taxIce);
+                if ($gruping !== -1) {
+                    // Solo sumar el sub_total a la base
+                    $taxes[$gruping]->base += $sub_total;
+                } else {
+                    $taxIce->base = $sub_total;
+                    $taxes[] = $taxIce;
+                }
             }
         }
 
@@ -366,8 +415,10 @@ class OrderXmlController extends Controller
         $i = 0;
         while ($i < count($taxes) && $result == -1) {
             if (
-                $taxes[$i]->percentageCode === $tax->iva
-                // && $taxes[$i]->percentage === $tax->percentage
+                // code: 2 IVA - 3 ICE
+                $taxes[$i]->code == $tax->code &&
+                // percentageCode: 0 - 2 - 6 IVA - 3092... ICE
+                $taxes[$i]->percentageCode === $tax->percentageCode
             ) {
                 $result = $i;
             }

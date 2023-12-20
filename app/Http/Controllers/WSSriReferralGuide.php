@@ -133,9 +133,9 @@ class WSSriReferralGuide
                         $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $toPath = str_replace($referral_guide->state, VoucherStates::REJECTED, $referral_guide->xml);
-                    Storage::put($toPath, $autorizacion);
-                    $referral_guide->xml = $toPath;
+                    // $toPath = str_replace($referral_guide->state, VoucherStates::REJECTED, $referral_guide->xml);
+                    // Storage::put($toPath, $autorizacion);
+                    // $referral_guide->xml = $toPath;
                     $referral_guide->state = VoucherStates::REJECTED;
                     $referral_guide->extra_detail = $message;
                     $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);

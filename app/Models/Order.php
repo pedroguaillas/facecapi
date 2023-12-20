@@ -12,7 +12,7 @@ class Order extends Model
         'serie', 'customer_id',
         'doc_realeted', 'expiration_days',
         'no_iva', 'base0', 'base12',
-        'iva', 'discount',
+        'ice', 'iva', 'discount',
         'total', 'voucher_type',
         'paid',
         // Electronic

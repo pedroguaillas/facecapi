@@ -128,18 +128,13 @@ class WSSriOrderController
                 case VoucherStates::REJECTED:
                     $mensajes = json_decode(json_encode($autorizacion->mensajes), true);
 
-                    $message = $mensajes['mensaje']['mensaje'];
+                    $message = $mensajes['mensaje']['mensaje'] . '. ';
                     if (array_key_exists('informacionAdicional', $mensajes['mensaje'])) {
-                        $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
+                        $message .= $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $toPath = str_replace($order->state, VoucherStates::REJECTED, $order->xml);
-                    Storage::put($toPath, $autorizacion);
-                    $order->xml = $toPath;
                     $order->state = VoucherStates::REJECTED;
-                    $order->extra_detail = $message;
-                    $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);
-                    $order->autorized = $authorizationDate->format('Y-m-d H:i:s');
+                    $order->extra_detail = substr($message, 0, 255);
                     $order->save();
                     break;
                 default:
@@ -174,7 +169,7 @@ class WSSriOrderController
         $elementocomprobante = $dom->createElement('comprobante');
         $autorizacion->appendChild($elementocomprobante);
 
-        // Use createCDATASection() function to create a new cdata node 
+        // Use createCDATASection() function to create a new cdata node
         $domElement = $dom->createCDATASection($comprobante->comprobante);
 
         // Append element in the document 

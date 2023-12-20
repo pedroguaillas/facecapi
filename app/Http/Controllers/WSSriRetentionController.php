@@ -53,7 +53,6 @@ class WSSriRetentionController
                     $this->authorize($id);
                     break;
                 case VoucherStates::RETURNED:
-                    var_dump($result->RespuestaRecepcionComprobante);
                     $mensajes = json_decode(json_encode($result->RespuestaRecepcionComprobante->comprobantes->comprobante->mensajes), true);
 
                     $message = $mensajes['mensaje']['mensaje'];

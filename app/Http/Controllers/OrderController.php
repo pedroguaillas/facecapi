@@ -136,7 +136,8 @@ class OrderController extends Controller
                         'product_id' => $product['product_id'],
                         'quantity' => $product['quantity'],
                         'price' => $product['price'],
-                        'discount' => $product['discount']
+                        'discount' => $product['discount'],
+                        'ice' => $product['ice'] ?? 0
                     ];
 
                     // Si tiene habilitado inventario
@@ -198,7 +199,7 @@ class OrderController extends Controller
             ->get();
 
         $orderitems = Product::join('order_items AS oi', 'product_id', 'products.id')
-            ->select('products.iva', 'oi.*')
+            ->select('products.iva', 'products.ice AS codice', 'oi.*')
             ->where('order_id', $order->id)
             ->get();
 
@@ -218,14 +219,14 @@ class OrderController extends Controller
 
     public function showPdf($id)
     {
-        $movement = Order::join('customers AS c', 'orders.customer_id', 'c.id')
+        $movement = Order::join('customers AS c', 'c.id', 'customer_id')
             ->select('orders.*', 'c.*')
             ->where('orders.id', $id)
             ->first();
 
-        $movement_items = OrderItem::join('products', 'products.id', 'order_items.product_id')
+        $movement_items = OrderItem::join('products', 'products.id', 'product_id')
             ->select('products.*', 'order_items.*')
-            ->where('order_items.order_id', $id)
+            ->where('order_id', $id)
             ->get();
 
         $orderaditionals = OrderAditional::where('order_id', $id)->get();
@@ -349,7 +350,8 @@ class OrderController extends Controller
                         'product_id' => $product['product_id'],
                         'quantity' => $product['quantity'],
                         'price' => $product['price'],
-                        'discount' => $product['discount']
+                        'discount' => $product['discount'],
+                        'ice' => $product['ice'] ?? 0
                     ];
                 }
                 OrderItem::where('order_id', $order->id)->delete();

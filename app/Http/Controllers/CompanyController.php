@@ -75,6 +75,7 @@ class CompanyController extends Controller
         $input['accounting'] = $request->accounting === 'true' ? 1 : 0;
         $input['micro_business'] = $request->micro_business === 'true' ? 1 : 0;
         $input['rimpe'] = $request->rimpe === 'true' ? 1 : 0;
+        $input['enviroment_type'] = 2;
 
         if (Company::create($input)) {
             $user = $request->only(['user', 'password', 'email']);

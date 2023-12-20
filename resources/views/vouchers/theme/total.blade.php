@@ -14,24 +14,18 @@
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->no_iva, 2) }}</td>
             </tr>
             <tr>
-                <td class="relleno">SUBTOTAL EXENTO IVA</td>
-                <td style="padding-right: .5em; text-align: right;">0.00</td>
-            </tr>
-            <tr>
                 <td class="relleno">SUBTOTAL SIN IMPUESTOS</td>
-                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->base12 + $movement->base0 + $movement->no_iva, 2) }}</td>
+                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->sub_total, 2) }}</td>
             </tr>
+            @if($movement->ice > 0)
             <tr>
-                <td class="relleno">DESCUENTO</td>
-                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->discount, 2) }}</td>
+                <td class="relleno">MONTO ICE</td>
+                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->ice, 2) }}</td>
             </tr>
+            @endif
             <tr>
                 <td class="relleno">IVA 12%</td>
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva, 2) }}</td>
-            </tr>
-            <tr>
-                <td class="relleno">PROPINA</td>
-                <td style="padding-right: .5em; text-align: right;">0.00</td>
             </tr>
             <tr>
                 <th class="relleno">TOTAL</th>
