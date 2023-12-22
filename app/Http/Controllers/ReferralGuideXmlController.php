@@ -67,7 +67,7 @@ class ReferralGuideXmlController extends Controller
         //Signner Start --------------------------
         // Si existe el certificado electronico y se ha creado Xml
         if ($company->cert_dir !== null && file_exists(Storage::path($folder . $file))) {
-            
+
             $public_path = env('APP_URL');
 
             $cert = Storage::path('cert' . DIRECTORY_SEPARATOR . $company->cert_dir);
@@ -108,7 +108,7 @@ class ReferralGuideXmlController extends Controller
         $date_end = new \DateTime($order->date_end);
 
         $string .= "<dirPartida>$order->address_from</dirPartida>";
-        $string .= "<razonSocialTransportista>$order->ca_name</razonSocialTransportista>";
+        $string .= "<razonSocialTransportista>" . str_replace("&", "Y", $order->ca_name) . "</razonSocialTransportista>";
         $string .= "<tipoIdentificacionTransportista>" . (strlen($order->ca_identication) === 13 ? '04' : '05') . "</tipoIdentificacionTransportista>";
         $string .= "<rucTransportista>$order->ca_identication</rucTransportista>";
         $string .= '<obligadoContabilidad>' . ($company->accounting ? 'SI' : 'NO') . '</obligadoContabilidad>';
@@ -121,7 +121,7 @@ class ReferralGuideXmlController extends Controller
         $string .= '<destinatarios>';
         $string .= '<destinatario>';
         $string .= "<identificacionDestinatario>$order->identication</identificacionDestinatario>";
-        $string .= "<razonSocialDestinatario>$order->name</razonSocialDestinatario>";
+        $string .= "<razonSocialDestinatario>" . str_replace("&", "Y", $order->name) . "</razonSocialDestinatario>";
         $string .= "<dirDestinatario>$order->address_to</dirDestinatario>";
         $string .= $order->reason_transfer ? "<motivoTraslado>$order->reason_transfer</motivoTraslado>" : null;
         $string .= $order->branch_destiny ? "<codEstabDestino>$order->branch_destiny</codEstabDestino>" : null;
