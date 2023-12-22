@@ -94,12 +94,12 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
 
     //Products
     $router->post('productlist', 'ProductController@productlist');
-    $router->get('productscreate', 'ProductController@create');
-    $router->post('products', 'ProductController@store');
-    $router->get('products/{id}', 'ProductController@show');
-    $router->put('products/{id}', 'ProductController@update');
-    $router->post('products_import', 'ProductController@import');
-    $router->get('products_export', 'ProductController@export');
+    $router->get('product/create', 'ProductController@create');
+    $router->post('product', 'ProductController@store');
+    $router->get('product/{id}', 'ProductController@show');
+    $router->put('product/{id}', 'ProductController@update');
+    $router->post('products/import', 'ProductController@import');
+    $router->get('products/export', 'ProductController@export');
     $router->post('products/getmasive', 'ProductController@getmasive');
 
     //orders

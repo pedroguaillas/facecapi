@@ -5,14 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Resources\ProductResources;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Models\ChartAccount;
-use App\Models\Category;
 use App\Models\Company;
-use App\Exports\ProductExport;
+use App\Models\IceCataloge;
 use App\Models\Product;
-use App\Models\Unity;
 use Carbon\Carbon;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ProductController extends Controller
 {
@@ -46,18 +45,8 @@ class ProductController extends Controller
 
     public function create()
     {
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
-
-        $unities = Unity::where('branch_id', $branch->id)->get();
-        $categories = Category::where('branch_id', $branch->id)->get();
-        //Falta restringir que el plan de cuentas sea solo de esa compania
-
         return response()->json([
-            'unities' => $unities,
-            'categories' => $categories,
+            'iceCataloges' => IceCataloge::all()
         ]);
     }
 
@@ -172,21 +161,9 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
-
-        $unities = Unity::where('branch_id', $branch->id)->get();
-        $categories = Category::where('branch_id', $branch->id)->get();
-        //Falta restringir que el plan de cuentas sea solo de esa compania
-        $accounts = ChartAccount::where('economic_activity', $company->economic_activity)->get();
-
         return response()->json([
             'product' => Product::find($id),
-            'unities' => $unities,
-            'categories' => $categories,
-            'accounts' => $accounts
+            'iceCataloges' => IceCataloge::all()
         ]);
     }
 
@@ -211,6 +188,48 @@ class ProductController extends Controller
 
     public function export()
     {
-        return Excel::download(new ProductExport(), 'Ventas.xlsx');
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
+        $branch = $company->branches->first();
+
+        $spreadsheet = new Spreadsheet();
+        $activeWorksheet = $spreadsheet->getActiveSheet();
+        $activeWorksheet->setCellValue('A1', 'Codigo');
+        $activeWorksheet->setCellValue('B1', 'Nombre');
+        $activeWorksheet->setCellValue('C1', 'Precio');
+        $activeWorksheet->setCellValue('D1', 'IVA');
+        $activeWorksheet->setCellValue('E1', 'ICE');
+
+        $products = Product::select('code', 'name', 'price1', 'iva', 'ice')
+            ->where('branch_id', $branch->id)
+            ->get();
+
+        $row = 2;
+
+        foreach ($products as $product) {
+            $activeWorksheet->getCell('A' . $row)->setValueExplicit($product->code, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue('B' . $row, $product->name);
+            $activeWorksheet->setCellValue('C' . $row, $product->price1);
+            $activeWorksheet->setCellValue('D' . $row, $product->iva == 2 ? '12%' : '0%');
+            $activeWorksheet->setCellValue('E' . $row, $product->ice);
+            $row++;
+        }
+
+        $filename = Storage::path("productos.xlsx");
+
+        try {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($filename);
+            $content = file_get_contents($filename);
+
+            unlink($filename);
+
+            return $content;
+        } catch (Exception $e) {
+            exit($e->getMessage());
+        }
+
+        exit($content);
     }
 }

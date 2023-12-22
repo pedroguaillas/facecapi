@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Http\Resources\CustomerResources;
 use App\Http\Resources\OrderResources;
 use App\Http\Resources\ProductResources;
+use App\Models\MethodOfPayment;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderAditional;
@@ -54,7 +55,9 @@ class OrderController extends Controller
         $branch = $company->branches->first();
 
         return response()->json([
-            'series' => $this->getSeries($branch)
+            'series' => $this->getSeries($branch),
+            'methodOfPayments' => MethodOfPayment::all(),
+            'pay_method' => $company->pay_method
         ]);
     }
 
@@ -118,7 +121,7 @@ class OrderController extends Controller
         $input = $request->except(['products', 'send', 'aditionals']);
 
         // Agregar la columna metodo de pago
-        $input['pay_method'] = $company->pay_method;
+        // $input['pay_method'] = $company->pay_method;
 
         if ($order = $branch->orders()->create($input)) {
 
@@ -213,7 +216,8 @@ class OrderController extends Controller
             'order' => $order,
             'order_items' => $orderitems,
             'order_aditionals' => $orderaditionals,
-            'series' => $this->getSeries($branch)
+            'series' => $this->getSeries($branch),
+            'methodOfPayments' => MethodOfPayment::all()
         ]);
     }
 
@@ -237,7 +241,7 @@ class OrderController extends Controller
 
         switch ($movement->voucher_type) {
             case 1:
-                $payMethod = $this->payMethod($movement->pay_method);
+                $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
                 $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals', 'payMethod'));
                 break;
             case 4:
@@ -248,37 +252,37 @@ class OrderController extends Controller
         return $pdf->stream();
     }
 
-    private function payMethod(int $pm)
-    {
-        $result = '';
-        switch ($pm) {
-            case 1:
-                $result = 'SIN UTILIZACION DEL SISTEMA FINANCIERO';
-                break;
-            case 15:
-                $result = 'COMPENSACIÓN DE DEUDAS';
-                break;
-            case 16:
-                $result = 'TARJETA DE DÉBITO';
-                break;
-            case 17:
-                $result = 'DINERO ELECTRÓNICO';
-                break;
-            case 18:
-                $result = 'TARJETA PREPAGO';
-                break;
-            case 19:
-                $result = 'TARJETA DE CRÉDITO';
-                break;
-            case 20:
-                $result = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
-                break;
-            case 21:
-                $result = 'ENDOSO DE TÍTULOS';
-                break;
-        }
-        return $result;
-    }
+    // private function payMethod(int $pm)
+    // {
+    //     $result = '';
+    //     switch ($pm) {
+    //         case 1:
+    //             $result = 'SIN UTILIZACION DEL SISTEMA FINANCIERO';
+    //             break;
+    //         case 15:
+    //             $result = 'COMPENSACIÓN DE DEUDAS';
+    //             break;
+    //         case 16:
+    //             $result = 'TARJETA DE DÉBITO';
+    //             break;
+    //         case 17:
+    //             $result = 'DINERO ELECTRÓNICO';
+    //             break;
+    //         case 18:
+    //             $result = 'TARJETA PREPAGO';
+    //             break;
+    //         case 19:
+    //             $result = 'TARJETA DE CRÉDITO';
+    //             break;
+    //         case 20:
+    //             $result = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
+    //             break;
+    //         case 21:
+    //             $result = 'ENDOSO DE TÍTULOS';
+    //             break;
+    //     }
+    //     return $result;
+    // }
 
     // PDF tamaño pequeño a imprimir
     public function printfPdf($id)
@@ -323,7 +327,7 @@ class OrderController extends Controller
 
         switch ($movement->voucher_type) {
             case 1:
-                $payMethod = $this->payMethod($movement->pay_method);
+                $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
                 $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals', 'payMethod'));
                 break;
             case 4:
