@@ -40,11 +40,15 @@ class WSSriReferralGuide
                 return;
             }
 
-            $this->moveXmlFile($referral_guide, VoucherStates::SENDED);
+            // $this->moveXmlFile($referral_guide, VoucherStates::SENDED);
+            $referral_guide->state = VoucherStates::SENDED;
+            $referral_guide->save();
 
             switch ($result->RespuestaRecepcionComprobante->estado) {
                 case VoucherStates::RECEIVED:
-                    $this->moveXmlFile($referral_guide, VoucherStates::RECEIVED);
+                    // $this->moveXmlFile($referral_guide, VoucherStates::RECEIVED);
+                    $referral_guide->state = VoucherStates::RECEIVED;
+                    $referral_guide->save();
                     $this->authorize($id);
                     break;
                 case VoucherStates::RETURNED:
@@ -56,8 +60,10 @@ class WSSriReferralGuide
                         $message .= ' informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $referral_guide->extra_detail = $message;
-                    $this->moveXmlFile($referral_guide, VoucherStates::RETURNED);
+                    $referral_guide->extra_detail = substr($message, 0, 255);
+                    // $this->moveXmlFile($referral_guide, VoucherStates::RETURNED);
+                    $referral_guide->state = VoucherStates::RETURNED;
+                    $referral_guide->save();
                     break;
             }
         } catch (\Exception $e) {
@@ -110,7 +116,7 @@ class WSSriReferralGuide
 
             switch ($autorizacion->estado) {
                 case VoucherStates::AUTHORIZED:
-                    $toPath = str_replace($referral_guide->state, VoucherStates::AUTHORIZED, $referral_guide->xml);
+                    $toPath = str_replace(VoucherStates::SIGNED, VoucherStates::AUTHORIZED, $referral_guide->xml);
                     $folder = substr($toPath, 0, strpos($toPath, VoucherStates::AUTHORIZED)) . VoucherStates::AUTHORIZED;
 
                     if (!file_exists(Storage::path($folder))) {
@@ -133,13 +139,8 @@ class WSSriReferralGuide
                         $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    // $toPath = str_replace($referral_guide->state, VoucherStates::REJECTED, $referral_guide->xml);
-                    // Storage::put($toPath, $autorizacion);
-                    // $referral_guide->xml = $toPath;
                     $referral_guide->state = VoucherStates::REJECTED;
-                    $referral_guide->extra_detail = $message;
-                    $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);
-                    $referral_guide->autorized = $authorizationDate->format('Y-m-d H:i:s');
+                    $referral_guide->extra_detail = substr($message, 0, 255);
                     $referral_guide->save();
                     break;
                 default:

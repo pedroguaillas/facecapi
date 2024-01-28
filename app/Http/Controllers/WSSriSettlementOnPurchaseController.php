@@ -40,11 +40,15 @@ class WSSriSettlementOnPurchaseController
                 return;
             }
 
-            $this->moveXmlFile($order, VoucherStates::SENDED);
+            // $this->moveXmlFile($order, VoucherStates::SENDED);
+            $order->state = VoucherStates::SENDED;
+            $order->save();
 
             switch ($result->RespuestaRecepcionComprobante->estado) {
                 case VoucherStates::RECEIVED:
-                    $this->moveXmlFile($order, VoucherStates::RECEIVED);
+                    // $this->moveXmlFile($order, VoucherStates::RECEIVED);
+                    $order->state = VoucherStates::RECEIVED;
+                    $order->save();
                     $this->authorize($id);
                     break;
                 case VoucherStates::RETURNED:
@@ -56,8 +60,10 @@ class WSSriSettlementOnPurchaseController
                         $message .= ' informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $order->extra_detail = $message;
-                    $this->moveXmlFile($order, VoucherStates::RETURNED);
+                    $order->extra_detail = substr($message, 0, 255);
+                    // $this->moveXmlFile($order, VoucherStates::RETURNED);
+                    $order->state = VoucherStates::RETURNED;
+                    $order->save();
                     break;
             }
         } catch (\Exception $e) {
@@ -110,7 +116,7 @@ class WSSriSettlementOnPurchaseController
 
             switch ($autorizacion->estado) {
                 case VoucherStates::AUTHORIZED:
-                    $toPath = str_replace($order->state, VoucherStates::AUTHORIZED, $order->xml);
+                    $toPath = str_replace(VoucherStates::SIGNED, VoucherStates::AUTHORIZED, $order->xml);
                     $folder = substr($toPath, 0, strpos($toPath, VoucherStates::AUTHORIZED)) . VoucherStates::AUTHORIZED;
 
                     if (!file_exists(Storage::path($folder))) {
@@ -133,13 +139,8 @@ class WSSriSettlementOnPurchaseController
                         $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    // $toPath = str_replace($order->state, VoucherStates::REJECTED, $order->xml);
-                    // Storage::put($toPath, $autorizacion);
-                    // $order->xml = $toPath;
                     $order->state = VoucherStates::REJECTED;
-                    $order->extra_detail = $message;
-                    $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);
-                    $order->autorized = $authorizationDate->format('Y-m-d H:i:s');
+                    $order->extra_detail = substr($message, 0, 255);
                     $order->save();
                     break;
                 default:

@@ -40,11 +40,15 @@ class WSSriOrderController
                 return;
             }
 
-            $this->moveXmlFile($order, VoucherStates::SENDED);
+            // $this->moveXmlFile($order, VoucherStates::SENDED);
+            $order->state = VoucherStates::SENDED;
+            $order->save();
 
             switch ($result->RespuestaRecepcionComprobante->estado) {
                 case VoucherStates::RECEIVED:
-                    $this->moveXmlFile($order, VoucherStates::RECEIVED);
+                    // $this->moveXmlFile($order, VoucherStates::RECEIVED);
+                    $order->state = VoucherStates::RECEIVED;
+                    $order->save();
                     $this->authorize($id);
                     break;
                 case VoucherStates::RETURNED:
@@ -56,8 +60,10 @@ class WSSriOrderController
                         $message .= ' informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $order->extra_detail = $message;
-                    $this->moveXmlFile($order, VoucherStates::RETURNED);
+                    $order->extra_detail = substr($message, 0, 255);
+                    // $this->moveXmlFile($order, VoucherStates::RETURNED);
+                    $order->state = VoucherStates::RETURNED;
+                    $order->save();
                     break;
             }
         } catch (\Exception $e) {
@@ -110,7 +116,7 @@ class WSSriOrderController
 
             switch ($autorizacion->estado) {
                 case VoucherStates::AUTHORIZED:
-                    $toPath = str_replace($order->state, VoucherStates::AUTHORIZED, $order->xml);
+                    $toPath = str_replace(VoucherStates::SIGNED, VoucherStates::AUTHORIZED, $order->xml);
                     $folder = substr($toPath, 0, strpos($toPath, VoucherStates::AUTHORIZED)) . VoucherStates::AUTHORIZED;
 
                     if (!file_exists(Storage::path($folder))) {

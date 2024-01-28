@@ -60,6 +60,12 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     // Branches
     $router->get('branches', 'BranchController@index');
     $router->post('branches', 'BranchController@store');
+    $router->put('branch/update/{id}', 'BranchController@update');
+
+    // Points
+    $router->get('branch/{branch_id}', 'EmisionPointController@index');
+    $router->post('points/store', 'EmisionPointController@store');
+    $router->put('points/update/{id}', 'EmisionPointController@update');
 
     // Categories
     $router->get('categories', 'CategoryController@index');

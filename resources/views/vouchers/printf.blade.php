@@ -27,7 +27,10 @@
 </head>
 
 <body>
-    <strong>{{ $company->company }}</strong>
+    @if($company->branches[0]->name !== null)
+    <strong>{{ $company->branches[0]->name }}</strong>
+    @endif
+    <div style="font-style: italic;">{{ $company->company }}</div>
     <div>RUC: {{ $company->ruc }}</div>
     <div>{{ $company->branches[0]->address }}</div>
     <div>------------------------------------------------------------------------------------</div>

@@ -9,6 +9,8 @@ use App\Http\Resources\CarrierResources;
 use App\Http\Resources\CustomerResources;
 use App\Http\Resources\ProductResources;
 use App\Http\Resources\ReferralGuideResources;
+use App\Models\Branch;
+use App\Models\EmisionPoint;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ReferralGuide;
@@ -40,10 +42,16 @@ class ReferralGuideController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        // $branch = $company->branches->first();
+
+        $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.referralguide,recognition")
+            ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
+            ->where('company_id', $company->id)
+            ->get();
 
         return response()->json([
-            'serie' => $this->getSeries($branch)
+            // 'serie' => $this->getSeries($branch)
+            'points' => $points
         ]);
     }
 
@@ -85,7 +93,7 @@ class ReferralGuideController extends Controller
         $company = Company::find($level->level_id);
         $branch = $company->branches->first();
 
-        if ($referralguide = $branch->referralguides()->create($request->except(['products', 'send']))) {
+        if ($referralguide = $branch->referralguides()->create($request->except(['products', 'send', 'point_id']))) {
             $products = $request->get('products');
 
             if (count($products) > 0) {
@@ -96,7 +104,13 @@ class ReferralGuideController extends Controller
                         'quantity' => $product['quantity'],
                     ];
                 }
+
                 $referralguide->referralguidetems()->createMany($array);
+
+                // Actualizar secuencia del comprobante
+                $emisionPoint = EmisionPoint::find($request->point_id);
+                $emisionPoint->referralguide = (int)substr($request->serie, 8) + 1;
+                $emisionPoint->save();
 
                 if ($request->get('send')) {
                     (new ReferralGuideXmlController())->xml($referralguide->id);

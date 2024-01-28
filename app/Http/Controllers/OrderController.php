@@ -7,6 +7,8 @@ use App\Models\Customer;
 use App\Http\Resources\CustomerResources;
 use App\Http\Resources\OrderResources;
 use App\Http\Resources\ProductResources;
+use App\Models\Branch;
+use App\Models\EmisionPoint;
 use App\Models\MethodOfPayment;
 use Illuminate\Http\Request;
 use App\Models\Order;
@@ -52,10 +54,16 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        // $branch = $company->branches->first();
+
+        $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.invoice,ep.creditnote,recognition")
+            ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
+            ->where('company_id', $company->id)
+            ->get();
 
         return response()->json([
-            'series' => $this->getSeries($branch),
+            'points' => $points,
+            // 'series' => $this->getSeries($branch),
             'methodOfPayments' => MethodOfPayment::all(),
             'pay_method' => $company->pay_method
         ]);
@@ -69,7 +77,6 @@ class OrderController extends Controller
                 ['branch_id', $branch_id], // De la sucursal especifico
                 ['voucher_type', 1] // 1-Factura
             ])
-            // ->whereIn('state', ['AUTORIZADO', 'ANULADO'])
             ->orderBy('created_at', 'desc') // Para traer el ultimo
             ->first();
 
@@ -78,7 +85,6 @@ class OrderController extends Controller
                 ['branch_id', $branch_id], // De la sucursal especifico
                 ['voucher_type', 4] // 4-Nota-Credito
             ])
-            // ->whereIn('state', ['AUTORIZADO', 'ANULADO'])
             ->orderBy('created_at', 'desc') // Para traer el ultimo
             ->first();
 
@@ -118,10 +124,7 @@ class OrderController extends Controller
         $branch = $company->branches->first();
 
         // Nuevo objeto para agregar metodo de pago
-        $input = $request->except(['products', 'send', 'aditionals']);
-
-        // Agregar la columna metodo de pago
-        // $input['pay_method'] = $company->pay_method;
+        $input = $request->except(['products', 'send', 'aditionals', 'point_id']);
 
         if ($order = $branch->orders()->create($input)) {
 
@@ -181,6 +184,11 @@ class OrderController extends Controller
                 }
             }
 
+            // Actualizar secuencia del comprobante
+            $emisionPoint = EmisionPoint::find($request->point_id);
+            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'} = (int)substr($request->serie, 8) + 1;
+            $emisionPoint->save();
+
             if ($request->get('send')) {
                 (new OrderXmlController())->xml($order->id);
             }
@@ -192,7 +200,12 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        // $branch = $company->branches->first();
+
+        $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.invoice,ep.creditnote,recognition")
+            ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
+            ->where('company_id', $company->id)
+            ->get();
 
         $order = Order::findOrFail($id);
 
@@ -216,7 +229,8 @@ class OrderController extends Controller
             'order' => $order,
             'order_items' => $orderitems,
             'order_aditionals' => $orderaditionals,
-            'series' => $this->getSeries($branch),
+            'points' => $points,
+            // 'series' => $this->getSeries($branch),
             'methodOfPayments' => MethodOfPayment::all()
         ]);
     }
@@ -251,38 +265,6 @@ class OrderController extends Controller
 
         return $pdf->stream();
     }
-
-    // private function payMethod(int $pm)
-    // {
-    //     $result = '';
-    //     switch ($pm) {
-    //         case 1:
-    //             $result = 'SIN UTILIZACION DEL SISTEMA FINANCIERO';
-    //             break;
-    //         case 15:
-    //             $result = 'COMPENSACIÓN DE DEUDAS';
-    //             break;
-    //         case 16:
-    //             $result = 'TARJETA DE DÉBITO';
-    //             break;
-    //         case 17:
-    //             $result = 'DINERO ELECTRÓNICO';
-    //             break;
-    //         case 18:
-    //             $result = 'TARJETA PREPAGO';
-    //             break;
-    //         case 19:
-    //             $result = 'TARJETA DE CRÉDITO';
-    //             break;
-    //         case 20:
-    //             $result = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
-    //             break;
-    //         case 21:
-    //             $result = 'ENDOSO DE TÍTULOS';
-    //             break;
-    //     }
-    //     return $result;
-    // }
 
     // PDF tamaño pequeño a imprimir
     public function printfPdf($id)

@@ -6,6 +6,8 @@ use App\Models\Company;
 use App\Http\Resources\ProductResources;
 use App\Http\Resources\ProviderResources;
 use App\Http\Resources\ShopResources;
+use App\Models\Branch;
+use App\Models\EmisionPoint;
 use App\Models\ShopRetentionItem;
 use App\Models\Product;
 use App\Models\Provider;
@@ -48,11 +50,17 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        // $branch = $company->branches->first();
+
+        $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.retention,ep.settlementonpurchase,recognition")
+            ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
+            ->where('company_id', $company->id)
+            ->get();
 
         return response()->json([
             'taxes' => Tax::all(),
-            'series' => $this->getSeries($branch)
+            // 'series' => $this->getSeries($branch)
+            'points' => $points
         ]);
     }
 
@@ -110,7 +118,7 @@ class ShopController extends Controller
         $company = Company::find($level->level_id);
         $branch = $company->branches->first();
 
-        $except = ['taxes', 'pay_methods', 'app_retention', 'send'];
+        $except = ['taxes', 'pay_methods', 'app_retention', 'send', 'point_id'];
 
         // Inicio ... Validar que se anule la retencion anterior
         $shop_verfiy = Shop::where([
@@ -177,6 +185,14 @@ class ShopController extends Controller
                 }
             }
 
+            // Si aplica retención es liquidación en compra
+            if ($request->has('point_id')) {
+                $emisionPoint = EmisionPoint::find($request->point_id);
+                if ($request->voucher_type === 3) $emisionPoint->settlementonpurchase = (int)substr($request->serie, 8) + 1;
+                if ($request->app_retention) $emisionPoint->retention = (int)substr($request->serie_retencion, 8) + 1;
+                $emisionPoint->save();
+            }
+
             // Envio de comprobantes
             if ($send_set) {
                 (new SettlementOnPurchaseXmlController())->xml($shop->id);
@@ -189,10 +205,10 @@ class ShopController extends Controller
 
     public function show($id)
     {
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        // $auth = Auth::user();
+        // $level = $auth->companyusers->first();
+        // $company = Company::find($level->level_id);
+        // $branch = $company->branches->first();
 
         $shop = Shop::findOrFail($id);
 
@@ -206,8 +222,8 @@ class ShopController extends Controller
             ->where('shop_id', $shop->id)
             ->get();
 
-        $series = $this->getSeries($branch);
-        $shop->serie_retencion = ($shop->serie_retencion !== null) ? $shop->serie_retencion : $series['retention'];
+        // $series = $this->getSeries($branch);
+        // $shop->serie_retencion = ($shop->serie_retencion !== null) ? $shop->serie_retencion : $series['retention'];
 
         $providers = Provider::where('id', $shop->provider_id)->get();
 
@@ -218,7 +234,7 @@ class ShopController extends Controller
             'shopitems' => $shopitems,
             'shopretentionitems' => $shop->shopretentionitems,
             'taxes' => Tax::all(),
-            'series' => $series
+            // 'series' => $series
         ]);
     }
 

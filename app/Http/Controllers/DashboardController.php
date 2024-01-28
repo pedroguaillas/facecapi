@@ -37,7 +37,8 @@ class DashboardController extends Controller
         $count_orders = Order::where('branch_id', $branch->id)->count();
         $count_shops = Shop::where('branch_id', $branch->id)->count();
 
-        $count_customers = Customer::where('branch_id', $branch->id)->count();
+        $count_customers = Customer::where(['branch_id' => $branch->id])
+            ->where('type_identification', '<>', 'cf')->count();
         $count_providers = Provider::where('branch_id', $branch->id)->count();
 
         return response()->json([
@@ -47,7 +48,7 @@ class DashboardController extends Controller
             'shops' => $shops,
             'count_orders' => $count_orders,
             'count_shops' => $count_shops,
-            'count_customers' => $count_customers - 1,
+            'count_customers' => $count_customers,
             'count_providers' => $count_providers,
         ]);
     }

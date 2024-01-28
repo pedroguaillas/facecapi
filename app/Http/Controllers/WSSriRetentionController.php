@@ -45,11 +45,15 @@ class WSSriRetentionController
                 return;
             }
 
-            $this->moveXmlFile($shop, VoucherStates::SENDED);
+            // $this->moveXmlFile($shop, VoucherStates::SENDED);
+            $shop->state_retencion = VoucherStates::SENDED;
+            $shop->save();
 
             switch ($result->RespuestaRecepcionComprobante->estado) {
                 case VoucherStates::RECEIVED:
-                    $this->moveXmlFile($shop, VoucherStates::RECEIVED);
+                    // $this->moveXmlFile($shop, VoucherStates::RECEIVED);
+                    $shop->state_retencion = VoucherStates::RECEIVED;
+                    $shop->save();
                     $this->authorize($id);
                     break;
                 case VoucherStates::RETURNED:
@@ -60,8 +64,10 @@ class WSSriRetentionController
                         $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $shop->extra_detail_retention = $message;
-                    $this->moveXmlFile($shop, VoucherStates::RETURNED);
+                    $shop->extra_detail_retention = substr($message, 0, 255);
+                    // $this->moveXmlFile($shop, VoucherStates::RETURNED);
+                    $shop->state_retencion = VoucherStates::RETURNED;
+                    $shop->save();
                     break;
             }
         } catch (\Exception $e) {
@@ -114,7 +120,7 @@ class WSSriRetentionController
 
             switch ($autorizacion->estado) {
                 case VoucherStates::AUTHORIZED:
-                    $toPath = str_replace($shop->state_retencion, VoucherStates::AUTHORIZED, $shop->xml_retention);
+                    $toPath = str_replace(VoucherStates::SIGNED, VoucherStates::AUTHORIZED, $shop->xml_retention);
                     $folder = substr($toPath, 0, strpos($toPath, VoucherStates::AUTHORIZED)) . VoucherStates::AUTHORIZED;
 
                     if (!file_exists(Storage::path($folder))) {
@@ -137,11 +143,8 @@ class WSSriRetentionController
                         $message .= '. informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
                     }
 
-                    $toPath = str_replace($shop->state_retencion, VoucherStates::REJECTED, $shop->xml_retention);
-                    Storage::put($toPath, $this->xmlautorized($autorizacion));
-                    $shop->xml_retention = $toPath;
                     $shop->state_retencion = VoucherStates::REJECTED;
-                    $shop->extra_detail_retention = $message;
+                    $shop->extra_detail_retention = substr($message, 0, 255);
                     $shop->save();
                     break;
                 default:
