@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\ProductResources;
+use App\Models\Branch;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Company;
@@ -20,7 +21,8 @@ class ProductController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $search = '';
         $paginate = 15;
@@ -55,7 +57,8 @@ class ProductController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         try {
             $product = $branch->products()->create($request->all());
@@ -81,7 +84,8 @@ class ProductController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $products = $request->get('products');
 
@@ -98,7 +102,9 @@ class ProductController extends Controller
                 'iva' => $product['iva']
             ]);
         }
-        $product = $company->branches->first()->products()->createMany($newProducts);
+        $product = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first()
+            ->products()->createMany($newProducts);
 
         $products = Product::leftJoin('categories', 'categories.id', 'products.category_id')
             ->leftJoin('unities', 'unities.id', 'products.unity_id')
@@ -113,7 +119,8 @@ class ProductController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $prods = $request->get('prods');
 
@@ -191,7 +198,8 @@ class ProductController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $spreadsheet = new Spreadsheet();
         $activeWorksheet = $spreadsheet->getActiveSheet();

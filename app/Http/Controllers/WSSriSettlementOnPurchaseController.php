@@ -234,19 +234,4 @@ class WSSriSettlementOnPurchaseController
             return response()->json(['state' => 'KO']);
         }
     }
-
-    private function moveXmlFile($order, $newState)
-    {
-        $xml = str_replace($order->state, $newState, $order->xml);
-        $folder = substr($xml, 0, strpos($xml, $newState)) . $newState;
-
-        if (!file_exists(Storage::path($folder))) {
-            Storage::makeDirectory($folder);
-        }
-
-        Storage::move($order->xml, $xml);
-        $order->state = $newState;
-        $order->xml = $xml;
-        $order->save();
-    }
 }

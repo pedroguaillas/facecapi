@@ -12,11 +12,6 @@ use App\Models\Branch;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
         $auth = Auth::user();
@@ -28,22 +23,6 @@ class CategoryController extends Controller
         return CategoryResources::collection($branch->categories);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         $auth = Auth::user();
@@ -52,7 +31,9 @@ class CategoryController extends Controller
         $company = Company::find($level->level_id);
 
         try {
-            $category = $company->branches->first()->categories()->create($request->all());
+            $category = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first()
+                ->categories()->create($request->all());
         } catch (\Illuminate\Database\QueryException $e) {
             $errorCode = $e->errorInfo[1];
             if ($errorCode == 1062) {
@@ -66,25 +47,12 @@ class CategoryController extends Controller
             ->setStatusCode(Response::HTTP_ACCEPTED);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Category  $category
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
         CategoryResources::withoutWrapping();
         return (new CategoryResources(Category::find($id)));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Category  $category
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id)
     {
         $category = Category::findOrFail($id);
@@ -96,12 +64,6 @@ class CategoryController extends Controller
             ->setStatusCode(Response::HTTP_OK);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Category  $category
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
         $category = Category::findOrFail($id);

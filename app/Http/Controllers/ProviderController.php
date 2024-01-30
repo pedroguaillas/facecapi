@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Http\Resources\ProviderResources;
+use App\Models\Branch;
 use App\Models\Provider;
 
 class ProviderController extends Controller
@@ -15,7 +16,8 @@ class ProviderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $search = '';
         $paginate = 15;
@@ -40,7 +42,8 @@ class ProviderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         try {
             $provider = $branch->providers()->create($request->all());
@@ -85,7 +88,8 @@ class ProviderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $providers = $request->get('providers');
 
@@ -100,7 +104,9 @@ class ProviderController extends Controller
                 'email' => $provider['email'] == '' ? null : $provider['email']
             ]);
         }
-        $provider = $company->branches->first()->providers()->createMany($newproviders);
+        $provider = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first()
+            ->providers()->createMany($newproviders);
 
         $providers = Provider::where('branch_id', $branch->id);
 

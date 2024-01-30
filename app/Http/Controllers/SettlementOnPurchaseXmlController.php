@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Company;
@@ -69,7 +70,7 @@ class SettlementOnPurchaseXmlController extends Controller
         //Signner Start --------------------------
         // Si existe el certificado electronico y se ha creado Xml
         if ($company->cert_dir !== null && file_exists(Storage::path($folder . $file))) {
-            
+
             $public_path = env('APP_URL');
 
             $cert = Storage::path('cert' . DIRECTORY_SEPARATOR . $company->cert_dir);
@@ -242,7 +243,8 @@ class SettlementOnPurchaseXmlController extends Controller
 
     private function infoTributaria($company, $order)
     {
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $voucher_type = str_pad($order->voucher_type, 2, '0', STR_PAD_LEFT);
 

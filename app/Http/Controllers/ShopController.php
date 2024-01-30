@@ -29,7 +29,9 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        // $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $search = $request->search;
 
@@ -50,7 +52,6 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        // $branch = $company->branches->first();
 
         $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.retention,ep.settlementonpurchase,recognition")
             ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
@@ -59,7 +60,6 @@ class ShopController extends Controller
 
         return response()->json([
             'taxes' => Tax::all(),
-            // 'series' => $this->getSeries($branch)
             'points' => $points
         ]);
     }
@@ -116,7 +116,8 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $except = ['taxes', 'pay_methods', 'app_retention', 'send', 'point_id'];
 
@@ -208,7 +209,6 @@ class ShopController extends Controller
         // $auth = Auth::user();
         // $level = $auth->companyusers->first();
         // $company = Company::find($level->level_id);
-        // $branch = $company->branches->first();
 
         $shop = Shop::findOrFail($id);
 
@@ -381,7 +381,8 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $year = substr($month, 0, 4);
         $month = substr($month, 5, 2);

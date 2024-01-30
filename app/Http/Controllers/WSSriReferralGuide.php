@@ -183,19 +183,4 @@ class WSSriReferralGuide
 
         return $dom->saveXML();
     }
-
-    private function moveXmlFile($referral_guide, $newState)
-    {
-        $xml = str_replace($referral_guide->state, $newState, $referral_guide->xml);
-        $folder = substr($xml, 0, strpos($xml, $newState)) . $newState;
-
-        if (!file_exists(Storage::path($folder))) {
-            Storage::makeDirectory($folder);
-        }
-
-        Storage::move($referral_guide->xml, $xml);
-        $referral_guide->state = $newState;
-        $referral_guide->xml = $xml;
-        $referral_guide->save();
-    }
 }

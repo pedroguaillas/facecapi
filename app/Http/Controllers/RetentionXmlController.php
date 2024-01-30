@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\StaticClasses\VoucherStates;
@@ -200,7 +201,8 @@ class RetentionXmlController extends Controller
 
     private function infoTributaria($company, $shop)
     {
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $voucher_type = '07';
 

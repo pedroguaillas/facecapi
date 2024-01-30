@@ -29,7 +29,8 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $search = $request->search;
 
@@ -54,7 +55,6 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        // $branch = $company->branches->first();
 
         $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.invoice,ep.creditnote,recognition")
             ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
@@ -63,57 +63,9 @@ class OrderController extends Controller
 
         return response()->json([
             'points' => $points,
-            // 'series' => $this->getSeries($branch),
             'methodOfPayments' => MethodOfPayment::all(),
             'pay_method' => $company->pay_method
         ]);
-    }
-
-    private function getSeries($branch)
-    {
-        $branch_id = $branch->id;
-        $invoice = Order::select('serie')
-            ->where([
-                ['branch_id', $branch_id], // De la sucursal especifico
-                ['voucher_type', 1] // 1-Factura
-            ])
-            ->orderBy('created_at', 'desc') // Para traer el ultimo
-            ->first();
-
-        $cn = Order::select('serie')
-            ->where([
-                ['branch_id', $branch_id], // De la sucursal especifico
-                ['voucher_type', 4] // 4-Nota-Credito
-            ])
-            ->orderBy('created_at', 'desc') // Para traer el ultimo
-            ->first();
-
-        $new_obj = [
-            'invoice' => $this->generedSerie($invoice, $branch->store),
-            'cn' => $this->generedSerie($cn, $branch->store),
-        ];
-
-        return $new_obj;
-    }
-
-    //Return the serie of sales generated
-    private function generedSerie($serie, $branch_store)
-    {
-        if ($serie != null) {
-            $serie = $serie->serie;
-            //Convert string to array
-            $serie = explode("-", $serie);
-            //Get value Integer from String & sum 1
-            $serie[2] = (int) $serie[2] + 1;
-            //Complete 9 zeros to left 
-            $serie[2] = str_pad($serie[2], 9, 0, STR_PAD_LEFT);
-            //convert Array to String
-            $serie = implode("-", $serie);
-        } else {
-            $serie = str_pad($branch_store, 3, 0, STR_PAD_LEFT) . '-010-000000001';
-        }
-
-        return $serie;
     }
 
     public function store(Request $request)
@@ -121,7 +73,8 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         // Nuevo objeto para agregar metodo de pago
         $input = $request->except(['products', 'send', 'aditionals', 'point_id']);
@@ -200,7 +153,6 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        // $branch = $company->branches->first();
 
         $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.invoice,ep.creditnote,recognition")
             ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
@@ -374,7 +326,8 @@ class OrderController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $year = substr($month, 0, 4);
         $month = substr($month, 5, 2);

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Http\Resources\CarrierResources;
+use App\Models\Branch;
 
 class CarrierController extends Controller
 {
@@ -15,7 +16,8 @@ class CarrierController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $search = '';
         $paginate = 15;
@@ -42,7 +44,9 @@ class CarrierController extends Controller
         $company = Company::find($level->level_id);
 
         try {
-            $carrier = $company->branches->first()->carriers()->create($request->all());
+            $carrier = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first()
+                ->carriers()->create($request->all());
             return response()->json(['carrier' => $carrier]);
         } catch (\Illuminate\Database\QueryException $e) {
             $errorCode = $e->errorInfo[1];

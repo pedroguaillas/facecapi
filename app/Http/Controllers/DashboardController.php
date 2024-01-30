@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Company;
 use App\Models\Customer;
@@ -17,7 +18,8 @@ class DashboardController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $active = $company->active_voucher;
         $expired = $company->expired;

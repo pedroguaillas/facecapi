@@ -235,19 +235,4 @@ class WSSriRetentionController
             return response()->json(['state' => 'KO']);
         }
     }
-
-    private function moveXmlFile($shop, $newState)
-    {
-        $xml = str_replace($shop->state_retencion, $newState, $shop->xml_retention);
-        $folder = substr($xml, 0, strpos($xml, $newState)) . $newState;
-
-        if (!file_exists(Storage::path($folder))) {
-            Storage::makeDirectory($folder);
-        }
-
-        Storage::move($shop->xml_retention, $xml);
-        $shop->state_retencion = $newState;
-        $shop->xml_retention = $xml;
-        $shop->save();
-    }
 }

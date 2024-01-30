@@ -26,7 +26,8 @@ class ReferralGuideController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $referralguide = ReferralGuide::join('carriers AS ca', 'ca.id', 'carrier_id')
             ->join('customers AS c', 'c.id', 'customer_id')
@@ -42,7 +43,8 @@ class ReferralGuideController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        // $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.referralguide,recognition")
             ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
@@ -91,7 +93,8 @@ class ReferralGuideController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         if ($referralguide = $branch->referralguides()->create($request->except(['products', 'send', 'point_id']))) {
             $products = $request->get('products');

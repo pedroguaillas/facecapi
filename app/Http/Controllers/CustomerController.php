@@ -7,6 +7,7 @@ use App\Models\Customer;
 use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Http\Resources\CustomerResources;
+use App\Models\Branch;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -18,7 +19,8 @@ class CustomerController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $search = '';
         $paginate = 15;
@@ -45,7 +47,9 @@ class CustomerController extends Controller
         $company = Company::find($level->level_id);
 
         try {
-            $customer = $company->branches->first()->customers()->create($request->all());
+            $customer = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first()
+                ->customers()->create($request->all());
             return response()->json(['customer' => $customer]);
         } catch (\Illuminate\Database\QueryException $e) {
             $errorCode = $e->errorInfo[1];
@@ -80,7 +84,8 @@ class CustomerController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $customers = $request->get('customers');
 
@@ -93,7 +98,9 @@ class CustomerController extends Controller
                 'address' => $customer['address'],
             ]);
         }
-        $customer = $company->branches->first()->customers()->createMany($newcustomers);
+        $customer = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first()
+            ->customers()->createMany($newcustomers);
 
         $customers = Customer::where('branch_id', $branch->id);
 
@@ -105,7 +112,8 @@ class CustomerController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = $company->branches->first();
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
         $spreadsheet = new Spreadsheet();
         $activeWorksheet = $spreadsheet->getActiveSheet();
