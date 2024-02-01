@@ -207,7 +207,7 @@ class OrderController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 4, 3),
+            'store' => (int)substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {
@@ -271,13 +271,25 @@ class OrderController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
+        $branch = Branch::where([
+            'company_id' => $company->id,
+            'store' => (int)substr($movement->serie, 0, 3),
+        ])->get();
+
+        if ($branch->count() === 0) {
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+        } elseif ($branch->count() === 1) {
+            $branch = $branch->first();
+        }
+
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'movement_items', 'orderaditionals', 'payMethod'));
+                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod'));
                 break;
             case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'movement_items', 'orderaditionals'));
+                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals'));
                 break;
         }
 

@@ -169,7 +169,7 @@ class ReferralGuideController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 4, 3),
+            'store' => (int)substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {

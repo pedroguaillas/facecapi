@@ -210,7 +210,7 @@ class ShopController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 4, 3),
+            'store' => (int)substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {
@@ -254,7 +254,7 @@ class ShopController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 4, 3),
+            'store' => (int)substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {
@@ -298,9 +298,21 @@ class ShopController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
+        $branch = Branch::where([
+            'company_id' => $company->id,
+            'store' => (int)substr($movement->serie, 0, 3),
+        ])->get();
+
+        if ($branch->count() === 0) {
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+        } elseif ($branch->count() === 1) {
+            $branch = $branch->first();
+        }
+
         $comprobante = $this->voucherType($movement->voucher_type_v);
 
-        $pdf = PDF::loadView('vouchers/retention', compact('movement', 'company', 'retention_items', 'comprobante'));
+        $pdf = PDF::loadView('vouchers/retention', compact('movement', 'company', 'branch', 'retention_items', 'comprobante'));
 
         $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
     }
