@@ -167,7 +167,19 @@ class ReferralGuideController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        $pdf = PDF::loadView('vouchers/referralguide', compact('movement', 'company', 'movement_items'));
+        $branch = Branch::where([
+            'company_id' => $company->id,
+            'store' => (int)substr($movement->serie, 4, 3),
+        ])->get();
+
+        if ($branch->count() === 0) {
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+        } elseif ($branch->count() === 1) {
+            $branch = $branch->first();
+        }
+
+        $pdf = PDF::loadView('vouchers/referralguide', compact('movement', 'company', 'branch', 'movement_items'));
 
         return $pdf->stream();
     }

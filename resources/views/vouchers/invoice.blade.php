@@ -52,7 +52,7 @@
                     <td>{{ $item->name }}</td>
                     <td style="text-align: right; width: 5em;">{{ number_format($item->price, $company->decimal) }}</td>
                     <td style="text-align: right; width: 5em;">{{ number_format($item->discount, 2) }}</td>
-                    <td style="text-align: right; width: 5em;">{{ number_format($item->quantity * $item->price, 2) }}</td>
+                    <td style="text-align: right; width: 5em;">{{ number_format($item->quantity * $item->price - $item->discount, 2) }}</td>
                 </tr>
             </tbody>
         </table>

@@ -17,6 +17,12 @@
                 <td class="relleno">SUBTOTAL SIN IMPUESTOS</td>
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->sub_total, 2) }}</td>
             </tr>
+            @if($movement->discount > 0)
+            <tr>
+                <td class="relleno">DESCUENTO</td>
+                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->discount, 2) }}</td>
+            </tr>
+            @endif
             @if($movement->ice > 0)
             <tr>
                 <td class="relleno">MONTO ICE</td>

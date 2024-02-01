@@ -301,8 +301,8 @@ class OrderXmlController extends Controller
         $string .= '<detalles>';
         foreach ($order_items as $detail) {
             $sub_total = $detail->quantity * $detail->price;
-            $discount = round($sub_total * $detail->discount * .01, 2);
-            $total = round($sub_total + $detail->valice - $discount, 2);
+            // $discount = round($sub_total * $detail->discount * .01, 2);
+            $total = round($sub_total + $detail->valice - $detail->discount, 2);
             $percentage = $detail->iva === 2 ? 12 : 0;
 
             $string .= "<detalle>";
@@ -313,7 +313,7 @@ class OrderXmlController extends Controller
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
             $string .= "<descuento>" . $detail->discount . "</descuento>";
-            $string .= "<precioTotalSinImpuesto>" . round($sub_total, 2) . "</precioTotalSinImpuesto>";
+            $string .= "<precioTotalSinImpuesto>" . round($total, 2) . "</precioTotalSinImpuesto>";
 
             $string .= "<impuestos>";
 
@@ -365,8 +365,7 @@ class OrderXmlController extends Controller
         $taxes = array();
         foreach ($order_items as $tax) {
             $sub_total = number_format($tax->quantity * $tax->price, 2, '.', '');
-            $discount = round($sub_total * $tax->discount * .01, 2);
-            $total = $sub_total + $tax->valice - $discount;
+            $total = $sub_total + $tax->valice - $tax->discount;
             $percentage = $tax->iva === 2 ? 12 : 0;
 
             $tax->code = 2;

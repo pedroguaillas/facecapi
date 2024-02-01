@@ -7,14 +7,14 @@
             <tr>
                 <td class="relleno" style="text-align: center;" colspan="3">{{ $company->company }}</td>
             </tr>
-            @if($company->branches[0]->name !== null)
+            @if($branch->name !== null)
             <tr>
-                <th class="relleno" colspan="3">{{ $company->branches[0]->name }}</th>
+                <th class="relleno" colspan="3">{{ $branch->name }}</th>
             </tr>
             @endif
             <tr>
                 <td class="relleno">Dirección</td>
-                <td class="align-middle" colspan="2">{{ $company->branches[0]->address }}</td>
+                <td class="align-middle" colspan="2">{{ $branch->address }}</td>
             </tr>
             <tr>
                 <td class="relleno" colspan="2">Obligado a llevar contabilidad</td>
@@ -28,7 +28,7 @@
                 <td class="align-middle">{{ $company->retention_agent }}</td>
             </tr>
             @endif
-            
+
             @if($company->rimpe === 1)
             <tr>
                 <td style="text-align: left;" class="relleno" colspan="3">CONTRIBUYENTE RÉGIMEN RIMPE</td>

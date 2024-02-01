@@ -64,53 +64,6 @@ class ShopController extends Controller
         ]);
     }
 
-    private function getSeries($branch)
-    {
-        $branch_id = $branch->id;
-
-        $set_purchase = Shop::select('serie')
-            ->where([
-                ['branch_id', $branch_id], // De la sucursal específico
-                ['voucher_type', 3] // 3-Liquidacion-de-compra
-            ])
-            // ->whereIn('state', ['AUTORIZADO', 'ANULADO'])
-            ->orderBy('created_at', 'desc') // Para traer el ultimo
-            ->first();
-
-        $retention = Shop::select('serie_retencion AS serie')
-            ->where('branch_id', $branch_id) // De la sucursal específico
-            // ->whereIn('state_retencion', ['AUTORIZADO', 'ANULADO'])
-            ->orderBy('created_at', 'desc') // Para traer el ultimo
-            ->first();
-
-        $new_obj = [
-            'set_purchase' => $this->generedSerie($set_purchase, $branch->store),
-            'retention' => $this->generedSerie($retention, $branch->store)
-        ];
-
-        return $new_obj;
-    }
-
-    //Return the serie of sales generated
-    private function generedSerie($serie, $branch_store)
-    {
-        if ($serie != null) {
-            $serie = $serie->serie;
-            //Convert string to array
-            $serie = explode("-", $serie);
-            //Get value Integer from String & sum 1
-            $serie[2] = (int) $serie[2] + 1;
-            //Complete 9 zeros to left 
-            $serie[2] = str_pad($serie[2], 9, 0, STR_PAD_LEFT);
-            //convert Array to String
-            $serie = implode("-", $serie);
-        } else {
-            $serie = str_pad($branch_store, 3, 0, STR_PAD_LEFT) . '-010-000000001';
-        }
-
-        return $serie;
-    }
-
     public function store(Request $request)
     {
         $auth = Auth::user();
@@ -255,7 +208,19 @@ class ShopController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        $pdf = PDF::loadView('vouchers/settlementonpurchase', compact('movement', 'company', 'movement_items'));
+        $branch = Branch::where([
+            'company_id' => $company->id,
+            'store' => (int)substr($movement->serie, 4, 3),
+        ])->get();
+
+        if ($branch->count() === 0) {
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+        } elseif ($branch->count() === 1) {
+            $branch = $branch->first();
+        }
+
+        $pdf = PDF::loadView('vouchers/settlementonpurchase', compact('movement', 'branch', 'company', 'movement_items'));
 
         return $pdf->stream();
     }
@@ -287,9 +252,21 @@ class ShopController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
+        $branch = Branch::where([
+            'company_id' => $company->id,
+            'store' => (int)substr($movement->serie, 4, 3),
+        ])->get();
+
+        if ($branch->count() === 0) {
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+        } elseif ($branch->count() === 1) {
+            $branch = $branch->first();
+        }
+
         $comprobante = $this->voucherType($movement->voucher_type_v);
 
-        $pdf = PDF::loadView('vouchers/retention', compact('movement', 'company', 'retention_items', 'comprobante'));
+        $pdf = PDF::loadView('vouchers/retention', compact('movement', 'company', 'branch', 'retention_items', 'comprobante'));
 
         return $pdf->stream();
     }
