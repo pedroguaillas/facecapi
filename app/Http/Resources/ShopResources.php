@@ -20,13 +20,14 @@ class ShopResources extends JsonResource
                 'date' => $this->date,
                 'voucher_type' => $this->voucher_type,
                 'serie' => $this->serie,
+                'total' => $this->total,
                 // Retención
                 'serie_retencion' => $this->serie_retencion,
                 'state_retencion' => $this->state_retencion,
                 'xml_retention' => $this->xml_retention,
                 'send_mail_retention' => $this->send_mail_retention,
                 'extra_detail_retention' => $this->extra_detail_retention,
-                'total' => $this->total,
+                'retention' => $this->retention,
                 // Liquidación en compra
                 'state' => $this->state,
                 'xml' => $this->xml,

@@ -20,7 +20,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReferralGuideController extends Controller
 {
-
     public function index()
     {
         $auth = Auth::user();
@@ -43,8 +42,6 @@ class ReferralGuideController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        $branch = Branch::where('company_id', $company->id)
-            ->orderBy('created_at')->first();
 
         $points = Branch::selectRaw("branches.id AS branch_id,LPAD(store,3,'0') AS store,ep.id,LPAD(point,3,'0') AS point,ep.referralguide,recognition")
             ->leftJoin('emision_points AS ep', 'branches.id', 'branch_id')
@@ -52,40 +49,8 @@ class ReferralGuideController extends Controller
             ->get();
 
         return response()->json([
-            // 'serie' => $this->getSeries($branch)
             'points' => $points
         ]);
-    }
-
-    private function getSeries($branch)
-    {
-        $branch_id = $branch->id;
-        $invoice = ReferralGuide::select('serie')
-            ->where('branch_id', $branch_id) // De la sucursal especifico
-            ->orderBy('created_at', 'desc') // Para traer el ultimo
-            ->first();
-
-        return $this->generedSerie($invoice, $branch->store);
-    }
-
-    //Return the serie of sales generated
-    private function generedSerie($serie, $branch_store)
-    {
-        if ($serie != null) {
-            $serie = $serie->serie;
-            //Convert string to array
-            $serie = explode("-", $serie);
-            //Get value Integer from String & sum 1
-            $serie[2] = (int) $serie[2] + 1;
-            //Complete 9 zeros to left 
-            $serie[2] = str_pad($serie[2], 9, 0, STR_PAD_LEFT);
-            //convert Array to String
-            $serie = implode("-", $serie);
-        } else {
-            $serie = str_pad($branch_store, 3, 0, STR_PAD_LEFT) . '-010-000000001';
-        }
-
-        return $serie;
     }
 
     public function store(Request $request)

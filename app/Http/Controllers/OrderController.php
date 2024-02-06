@@ -182,7 +182,6 @@ class OrderController extends Controller
             'order_items' => $orderitems,
             'order_aditionals' => $orderaditionals,
             'points' => $points,
-            // 'series' => $this->getSeries($branch),
             'methodOfPayments' => MethodOfPayment::all()
         ]);
     }

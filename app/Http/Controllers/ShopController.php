@@ -17,7 +17,6 @@ use App\Models\Tax;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -36,12 +35,14 @@ class ShopController extends Controller
         $search = $request->search;
 
         $shops = Shop::join('providers AS p', 'p.id', 'provider_id')
-            ->select('shops.*', 'p.name', 'p.email')
+            ->leftJoin('shop_retention_items', 'shops.id', 'shop_id')
+            ->selectRaw('shops.id,date,voucher_type,serie,total,serie_retencion,state_retencion,xml_retention,send_mail_retention,extra_detail_retention,shops.state,xml,extra_detail,p.name,p.email,SUM(shop_retention_items.value) AS retention')
             ->where('shops.branch_id', $branch->id)
             ->where(function ($query) use ($search) {
                 return $query->where('shops.serie', 'LIKE', "%$search%")
                     ->orWhere('p.name', 'LIKE', "%$search%");
             })
+            ->groupBy('shops.id', 'date', 'voucher_type', 'serie', 'total', 'serie_retencion', 'state_retencion', 'xml_retention', 'send_mail_retention', 'extra_detail_retention', 'shops.state', 'xml', 'extra_detail', 'p.name', 'p.email')
             ->orderBy('shops.created_at', 'DESC');
 
         return ShopResources::collection($shops->paginate());
@@ -391,12 +392,11 @@ class ShopController extends Controller
         $activeWorksheet->setCellValue('K1', 'Total');
         $activeWorksheet->setCellValue('L1', 'Estado L/C');
 
-        $shops = DB::table('shops AS s')
-            ->join('providers AS p', 'p.id', 'provider_id')
-            ->select('s.voucher_type', 's.date', 's.authorization', 's.serie', 's.no_iva', 's.base0', 's.base12', 's.iva', 's.total', 's.state', 'p.identication', 'p.name')
+        $shops = Shop::join('providers AS p', 'p.id', 'provider_id')
+            ->select('voucher_type', 'date', 'authorization', 'serie', 'no_iva', 'base0', 'base12', 'iva', 'total', 'shops.state', 'p.identication', 'p.name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
-            ->where('s.branch_id', $branch->id)
+            ->where('shops.branch_id', $branch->id)
             ->get();
 
         $row = 2;
