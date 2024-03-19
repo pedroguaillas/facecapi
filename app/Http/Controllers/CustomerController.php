@@ -95,7 +95,9 @@ class CustomerController extends Controller
                 'type_identification' => $customer['type_identification'],
                 'identication' => $customer['identication'],
                 'name' => $customer['name'],
-                'address' => $customer['address'],
+                'address' => $customer['address'] === '' ? null : $customer['address'],
+                'email' => $customer['email'] === '' ? null : $customer['email'],
+                'phone' => $customer['phone'] === '' ? null : $customer['phone'],
             ]);
         }
         $customer = Branch::where('company_id', $company->id)
