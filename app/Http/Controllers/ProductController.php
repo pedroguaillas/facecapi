@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Models\IceCataloge;
+use App\Models\IvaTax;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -32,14 +33,15 @@ class ProductController extends Controller
             $paginate = $request->has('paginate') ? $request->paginate : $paginate;
         }
 
-        $products = Product::leftJoin('categories', 'categories.id', 'category_id')
+        $products = Product::join('iva_taxes', 'iva_taxes.code', 'products.iva')
+            ->leftJoin('categories', 'categories.id', 'category_id')
             ->leftJoin('unities', 'unities.id', 'unity_id')
             ->where('products.branch_id', $branch->id)
             ->where(function ($query) use ($search) {
                 return $query->where('products.code', 'LIKE', "%$search%")
                     ->orWhere('products.name', 'LIKE', "%$search%");
             })
-            ->select('products.*', 'categories.category', 'unities.unity')
+            ->selectRaw('products.id,products.code,products.type_product,products.name,products.price1,iva_taxes.code AS iva_code,percentage,products.ice,products.stock,categories.category,unities.unity')
             ->orderBy('products.created_at', 'DESC');
 
         return ProductResources::collection($products->paginate($paginate));
@@ -48,7 +50,8 @@ class ProductController extends Controller
     public function create()
     {
         return response()->json([
-            'iceCataloges' => IceCataloge::all()
+            'ivaTaxes' => IvaTax::where('state', 'active')->get(),
+            'iceCataloges' => IceCataloge::all(),
         ]);
     }
 
@@ -131,12 +134,14 @@ class ProductController extends Controller
         $order_items = [];
 
         foreach ($products as $product) {
+            $quantity = $this->findObjectById($product->code, $prods);
             array_push($order_items, [
                 'product_id' => $product->id,
                 'discount' => 0,
                 'iva' => $product->iva,
                 'price' => $product->price1,
-                'quantity' => $this->findObjectById($product->code, $prods)
+                'quantity' => $quantity,
+                'total_iva' => $product->price1 * $quantity
             ]);
         }
 
@@ -170,7 +175,8 @@ class ProductController extends Controller
     {
         return response()->json([
             'product' => Product::find($id),
-            'iceCataloges' => IceCataloge::all()
+            'ivaTaxes' => IvaTax::all(),
+            'iceCataloges' => IceCataloge::all(),
         ]);
     }
 
@@ -234,7 +240,7 @@ class ProductController extends Controller
             unlink($filename);
 
             return $content;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             exit($e->getMessage());
         }
 

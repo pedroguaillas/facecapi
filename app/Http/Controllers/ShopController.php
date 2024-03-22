@@ -14,6 +14,7 @@ use App\Models\Provider;
 use App\Models\Shop;
 use App\Models\ShopItem;
 use App\Models\Tax;
+use App\StaticClasses\VoucherStates;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -28,7 +29,7 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
-        // $branch = $company->branches->first();
+
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
@@ -160,10 +161,6 @@ class ShopController extends Controller
 
     public function show($id)
     {
-        // $auth = Auth::user();
-        // $level = $auth->companyusers->first();
-        // $company = Company::find($level->level_id);
-
         $shop = Shop::findOrFail($id);
 
         $products = Product::join('shop_items AS si', 'product_id', 'products.id')
@@ -175,9 +172,6 @@ class ShopController extends Controller
             ->select('products.iva', 'si.*')
             ->where('shop_id', $shop->id)
             ->get();
-
-        // $series = $this->getSeries($branch);
-        // $shop->serie_retencion = ($shop->serie_retencion !== null) ? $shop->serie_retencion : $series['retention'];
 
         $providers = Provider::where('id', $shop->provider_id)->get();
 
@@ -334,9 +328,11 @@ class ShopController extends Controller
 
     public function update(Request $request, $id)
     {
-        $except = ['id', 'taxes', 'pay_methods', 'app_retention', 'send'];
-
         $shop = Shop::find($id);
+
+        if ($shop->state === VoucherStates::AUTHORIZED || $shop->state_retencion === VoucherStates::AUTHORIZED) return;
+
+        $except = ['id', 'taxes', 'pay_methods', 'app_retention', 'send'];
 
         if ($shop->update($request->except($except))) {
 

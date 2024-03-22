@@ -21,11 +21,15 @@ class ProductResources extends JsonResource
                 'type_product' => $this->type_product,
                 'name' => $this->name,
                 'price1' => $this->price1,
-                'iva' => $this->iva,
+                'iva' => $this->percentage,
                 'ice' => $this->ice,
                 'irbpnr' => $this->irbpnr,
-                'stock' => $this->stock
+                'stock' => $this->stock,
             ],
+            'iva' => [
+                'code' => $this->iva_code,
+                'percentage' => $this->percentage,
+            ]
             // 'category' => [
             //     'category_id' => $this->category_id,
             //     'category' => $this->category,

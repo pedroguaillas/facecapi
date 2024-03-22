@@ -29,9 +29,7 @@ class OrderXmlController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        if (!$company->active_voucher) {
-            return;
-        }
+        if (!$company->active_voucher) return;
 
         $order = Order::join('customers AS c', 'c.id', 'customer_id')
             ->select('c.identication', 'c.name', 'c.address', 'c.type_identification', 'orders.*')
@@ -43,8 +41,9 @@ class OrderXmlController extends Controller
             return;
         }
 
-        $order_items = OrderItem::select('quantity', 'price', 'discount', 'order_items.ice AS valice', 'code AS codeproduct', 'name', 'iva', 'p.ice AS codice')
-            ->join('products AS p', 'p.id', 'product_id')
+        $order_items = OrderItem::join('products AS p', 'p.id', 'product_id')
+            ->join('iva_taxes AS it', 'it.code', 'p.iva')
+            ->selectRaw('quantity,price,discount,order_items.ice AS valice,p.code AS codeproduct,name,it.code AS iva,it.percentage,p.ice AS codice')
             ->where('order_id', $id)
             ->get();
 
@@ -94,7 +93,6 @@ class OrderXmlController extends Controller
                 Storage::makeDirectory($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED);
             }
 
-            // $rootfile = Storage::path($rootfile);
             $newrootfile = Storage::path($rootfile);
 
             // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
@@ -279,7 +277,8 @@ class OrderXmlController extends Controller
             // Solo en caso del impuesto al IVA poner la <tarifa>
             $string .= $tax->code === 2 ? "<tarifa>$tax->percentage</tarifa>" : null;
             // El valor varia en dependecia del impuesto
-            $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentage === 12 ? $order->iva : 0) : $order->ice) . "</valor>";
+            $string .= "<valor>" . ($tax->code === 2 ? round($tax->base * $tax->percentage / 100, 2) : $order->ice) . "</valor>";
+            // $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentageCode === 0 || $tax->percentageCode === 6 ? 0 : $order->iva) : $order->ice) . "</valor>";
             $string .= "</totalImpuesto>";
         }
 
@@ -303,7 +302,7 @@ class OrderXmlController extends Controller
             $sub_total = $detail->quantity * $detail->price;
             // $discount = round($sub_total * $detail->discount * .01, 2);
             $total = round($sub_total + $detail->valice - $detail->discount, 2);
-            $percentage = $detail->iva === 2 ? 12 : 0;
+            // $percentage = $detail->iva === 2 ? 12 : 0;
 
             $string .= "<detalle>";
 
@@ -321,9 +320,9 @@ class OrderXmlController extends Controller
             $string .= "<impuesto>";
             $string .= "<codigo>2</codigo>";
             $string .= "<codigoPorcentaje>" . $detail->iva . "</codigoPorcentaje>";
-            $string .= "<tarifa>$percentage</tarifa>";
+            $string .= "<tarifa>$detail->percentage</tarifa>";
             $string .= "<baseImponible>" . round($total, 2) . "</baseImponible>";
-            $string .= "<valor>" . round($percentage * $total * .01, 2) . "</valor>";
+            $string .= "<valor>" . round($detail->percentage * $total * .01, 2) . "</valor>";
             $string .= "</impuesto>";
 
             // Impuesto del Monto ICE opcional
@@ -366,7 +365,7 @@ class OrderXmlController extends Controller
         foreach ($order_items as $tax) {
             $sub_total = number_format($tax->quantity * $tax->price, 2, '.', '');
             $total = $sub_total + $tax->valice - $tax->discount;
-            $percentage = $tax->iva === 2 ? 12 : 0;
+            // $percentage = $tax->iva === 2 ? 12 : 0;
 
             $tax->code = 2;
             $tax->percentageCode = $tax->iva;
@@ -377,16 +376,22 @@ class OrderXmlController extends Controller
                 // Solo sumar el total a la base
                 $taxes[$gruping]->base += $total;
             } else {
-                $aux = [
-                    'code' => 2, //Impuesto al IVA
-                    // percentageCode: 0 0% - 2 12$ - 6 No objeto de IVA
-                    'percentageCode' => $tax->iva,
-                    'percentage' => $percentage,
-                    'base' => $total
-                ];
-                $aux = json_encode($aux);
-                $aux = json_decode($aux);
-                $taxes[] = $aux;
+                $taxIva = new stdClass;
+                $taxIva->code = 2;
+                $taxIva->percentageCode = $tax->iva;
+                $taxIva->percentage = $tax->percentage;
+                $taxIva->base = $total;
+                $taxes[] = $taxIva;
+                // $aux = [
+                //     'code' => 2, //Impuesto al IVA
+                //     // percentageCode: 0 0% - 2 12$ - 6 No objeto de IVA
+                //     'percentageCode' => $tax->iva,
+                //     'percentage' => $tax->percentage,
+                //     'base' => $total
+                // ];
+                // $aux = json_encode($aux);
+                // $aux = json_decode($aux);
+                // $taxes[] = $aux;
             }
 
             // Impuesto al ICE
