@@ -307,7 +307,8 @@ class OrderXmlController extends Controller
             $string .= "<detalle>";
 
             $string .= "<codigoPrincipal>" . $detail->codeproduct . "</codigoPrincipal>";
-            // $string .= "<codigoAuxiliar>" . $detail->codeproduct . "</codigoAuxiliar>";
+            // El codigo aux obligatorio por el IVA 5%
+            $string .= "<codigoAuxiliar>" . $detail->codeproduct . "</codigoAuxiliar>";
             $string .= "<descripcion>" . $detail->name . "</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
