@@ -15,6 +15,7 @@ use App\Models\Order;
 use App\Models\OrderAditional;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\StaticClasses\VoucherStates;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -79,6 +80,10 @@ class OrderController extends Controller
         // Nuevo objeto para agregar metodo de pago
         $input = $request->except(['products', 'send', 'aditionals', 'point_id']);
 
+        if (array_key_exists("guia", $input) && trim($input['guia']) === '') {
+            $input['guia'] = null;
+        }
+
         if ($order = $branch->orders()->create($input)) {
 
             // Registro de los Items de la Orden
@@ -96,7 +101,8 @@ class OrderController extends Controller
                         'quantity' => $product['quantity'],
                         'price' => $product['price'],
                         'discount' => $product['discount'],
-                        'ice' => $product['ice'] ?? 0
+                        'ice' => $product['ice'] ?? 0,
+                        'iva' => $product['iva'],
                     ];
 
                     // Si tiene habilitado inventario
@@ -167,7 +173,7 @@ class OrderController extends Controller
             ->get();
 
         $orderitems = Product::join('order_items AS oi', 'product_id', 'products.id')
-            ->select('products.iva', 'products.ice AS codice', 'oi.*')
+            ->select('products.ice AS codice', 'oi.*')
             ->where('order_id', $order->id)
             ->get();
 
@@ -192,6 +198,13 @@ class OrderController extends Controller
             ->select('orders.*', 'c.identication', 'c.name', 'c.address')
             ->where('orders.id', $id)
             ->first();
+
+        $after = false;
+        $dateToCheck = Carbon::parse($movement->date);
+
+        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+            $after = true;
+        }
 
         $movement_items = OrderItem::join('products', 'products.id', 'product_id')
             ->select('products.*', 'order_items.*')
@@ -219,7 +232,7 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod'));
+                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after'));
                 break;
             case 4:
                 $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals'));
@@ -259,6 +272,13 @@ class OrderController extends Controller
             ->where('orders.id', $id)
             ->first();
 
+        $after = false;
+        $dateToCheck = Carbon::parse($movement->date);
+
+        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+            $after = true;
+        }
+
         $movement_items = OrderItem::join('products', 'products.id', 'order_items.product_id')
             ->select('products.*', 'order_items.*')
             ->where('order_items.order_id', $id)
@@ -285,7 +305,7 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod'));
+                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after'));
                 break;
             case 4:
                 $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals'));
@@ -298,6 +318,8 @@ class OrderController extends Controller
     public function update(Request $request, $id)
     {
         $order = Order::findOrFail($id);
+
+        if ($order->state === VoucherStates::AUTHORIZED) return;
 
         if ($order->update($request->except(['id', 'products', 'send', 'aditionals']))) {
 

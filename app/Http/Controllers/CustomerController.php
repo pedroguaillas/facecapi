@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Http\Resources\CustomerResources;
 use App\Models\Branch;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -57,6 +58,113 @@ class CustomerController extends Controller
                 return response()->json(['message' => 'KEY_DUPLICATE']);
             }
         }
+    }
+
+    public function searchByCedula(string $identification)
+    {
+        $result = null;
+        // Consultar en todo el sistema
+        $customers = Customer::select('id', 'branch_id', 'name', 'address', 'phone', 'email')
+            ->where([
+                'identication' => $identification,
+                'type_identification' => 'cédula',
+            ])
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        // Si existe registros
+        if ($customers->count()) {
+            $result = $customers->first();
+            $result->branch_id = 0;
+
+            $auth = Auth::user();
+            $level = $auth->companyusers->first();
+            $company = Company::find($level->level_id);
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+
+            // recorrer para buscar tal vez pertenezca a la empresa
+            foreach ($customers as $customer) {
+                if ($customer->branch_id === $branch->id) {
+                    // retornar con la empresa o sino retornar el primero
+                    $customer->pertenece = true;
+                    $result = $customer;
+                }
+            }
+        }
+        else {
+            // Si no existe registros en el sistema consultar en la API
+            $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatos/ConsultaCedula', [
+                'Cedula' => $identification,
+                'Apikey' => env('END_POINT_API_Key')
+            ]);
+
+            if ($response['nombre'] === null) {
+                return;
+            } {
+                // Ajustar la respuesta
+                $result = [
+                    'branch_id' => 0,
+                    'name' => $response['nombre'],
+                    'address' => $response['calleDomicilio'],
+                ];
+            }
+        }
+
+        return response()->json(['customer' => $result]);
+    }
+
+    public function searchByRuc(string $identification)
+    {
+        $result = null;
+        // Consultar en todo el sistema
+        $customers = Customer::select('id', 'branch_id', 'name', 'address', 'phone', 'email')
+            ->where([
+                'identication' => $identification,
+                'type_identification' => 'ruc',
+            ])
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        // Si existe registros
+        if ($customers->count()) {
+            $result = $customers->first();
+            $result->branch_id = 0;
+
+            $auth = Auth::user();
+            $level = $auth->companyusers->first();
+            $company = Company::find($level->level_id);
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+
+            // recorrer para buscar tal vez pertenezca a la empresa
+            foreach ($customers as $customer) {
+                if ($customer->branch_id === $branch->id) {
+                    // retornar con la empresa o sino retornar el primero
+                    $customer->pertenece = true;
+                    $result = $customer;
+                }
+            }
+        } else {
+            // Si no existe registros en el sistema consultar en la API
+            $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatosSri/RucSri', [
+                'Ruc' => '0605087899001',
+                'Apikey' => env('END_POINT_API_Key'),
+            ]);
+
+            if ($response['razonSocial'] === null) {
+                return;
+            } {
+                // Ajustar la respuesta
+                $result = [
+                    'branch_id' => 0,
+                    'name' => $response['razonSocial'],
+                    'address' => $response['establecimientos'][0]['direccionCompleta'],
+                ];
+            }
+        }
+
+        return response()->json(['customer' => $result]);
     }
 
     public function edit(int $id)

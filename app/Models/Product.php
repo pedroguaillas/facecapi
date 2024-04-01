@@ -23,11 +23,6 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function saleitems()
-    {
-        return $this->hasMany(SaleItem::class);
-    }
-
     public function unity()
     {
         return $this->belongsTo(Unity::class);

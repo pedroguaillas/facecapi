@@ -1,18 +1,5 @@
 <?php
 
-/** @var \Laravel\Lumen\Routing\Router $router */
-
-/*
-|--------------------------------------------------------------------------
-| Application Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register all of the routes for an application.
-| It is a breeze. Simply tell Lumen the URIs it should respond to
-| and give it the Closure to call when that URI is requested.
-|
-*/
-
 $router->get('/', function () use ($router) {
     return $router->app->version();
 });
@@ -32,10 +19,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     // Matches "/api/refreshtoken
     $router->get('refreshtoken', 'AuthController@refreshToken');
 });
-
-// $router->group(['middleware' => 'jwt.refresh'], function ($router) {
-//     $router->get('refreshtoken', 'AuthController@refreshToken');
-// });
 
 $router->group(['middleware' => 'jwt.verify'], function ($router) {
 
@@ -176,6 +159,8 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->put('customers/{id}', 'CustomerController@update');
     $router->post('customers_import_csv', 'CustomerController@importCsv');
     $router->get('customers/export', 'CustomerController@export');
+    $router->get('customers/searchByCedula/{identification}', 'CustomerController@searchByCedula');
+    $router->get('customers/searchByRuc/{identification}', 'CustomerController@searchByRuc');
 
     // Proveedores
     $router->post('providerlist', 'ProviderController@providerlist');
@@ -189,4 +174,7 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->post('carriers', 'CarrierController@store');
     $router->get('carriers/{id}/edit', 'CarrierController@edit');
     $router->put('carriers/{id}', 'CarrierController@update');
+
+    // ATS
+    $router->get('ats/{month}', 'AtsController@generate');
 });

@@ -13,6 +13,9 @@ class Company extends Model
         'sign_valid_from', 'sign_valid_to',
         'enviroment_type', 'decimal',
 
+        // Ajuste base5 solo para ferreterias
+        'base5',
+
         //Agregado las 2 columas el 25 de enero del 2022
         'rimpe', 'inventory',
         // Metodo de pago
