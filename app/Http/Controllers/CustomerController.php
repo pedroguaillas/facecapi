@@ -91,8 +91,7 @@ class CustomerController extends Controller
                     $result = $customer;
                 }
             }
-        }
-        else {
+        } else {
             // Si no existe registros en el sistema consultar en la API
             $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatos/ConsultaCedula', [
                 'Cedula' => $identification,
@@ -148,7 +147,7 @@ class CustomerController extends Controller
         } else {
             // Si no existe registros en el sistema consultar en la API
             $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatosSri/RucSri', [
-                'Ruc' => '0605087899001',
+                'Ruc' => $identification,
                 'Apikey' => env('END_POINT_API_Key'),
             ]);
 
