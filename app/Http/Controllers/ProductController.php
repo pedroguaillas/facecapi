@@ -49,8 +49,19 @@ class ProductController extends Controller
 
     public function create()
     {
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
+
+        $taxes = IvaTax::where('state', 'active');
+
+        // Si compania no tiene habilitado IVA 5% desabilitar
+        if (!$company->base5) {
+            $taxes->where('code', '<>', 5);
+        }
+
         return response()->json([
-            'ivaTaxes' => IvaTax::where('state', 'active')->get(),
+            'ivaTaxes' => $taxes->get(),
             'iceCataloges' => IceCataloge::all(),
         ]);
     }
@@ -173,9 +184,19 @@ class ProductController extends Controller
 
     public function show($id)
     {
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
+
+        $taxes = IvaTax::where('state', 'active');
+
+        // Si compania no tiene habilitado IVA 5% desabilitar
+        if (!$company->base5) {
+            $taxes->where('code', '<>', 5);
+        }
         return response()->json([
             'product' => Product::find($id),
-            'ivaTaxes' => IvaTax::all(),
+            'ivaTaxes' => $taxes->get(),
             'iceCataloges' => IceCataloge::all(),
         ]);
     }

@@ -92,24 +92,24 @@ class CustomerController extends Controller
                 }
             }
         }
-        // else {
-        //     // Si no existe registros en el sistema consultar en la API
-        //     $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatos/ConsultaCedula', [
-        //         'Cedula' => $identification,
-        //         'Apikey' => env('END_POINT_API_Key')
-        //     ]);
+        else {
+            // Si no existe registros en el sistema consultar en la API
+            $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatos/ConsultaCedula', [
+                'Cedula' => $identification,
+                'Apikey' => env('END_POINT_API_Key')
+            ]);
 
-        //     if ($response['nombre'] === null) {
-        //         return;
-        //     } {
-        //         // Ajustar la respuesta
-        //         $result = [
-        //             'branch_id' => 0,
-        //             'name' => $response['nombre'],
-        //             'address' => $response['calleDomicilio'],
-        //         ];
-        //     }
-        // }
+            if ($response['nombre'] === null) {
+                return;
+            } {
+                // Ajustar la respuesta
+                $result = [
+                    'branch_id' => 0,
+                    'name' => $response['nombre'],
+                    'address' => $response['calleDomicilio'],
+                ];
+            }
+        }
 
         return response()->json(['customer' => $result]);
     }

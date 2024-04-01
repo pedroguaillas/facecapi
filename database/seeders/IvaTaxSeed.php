@@ -30,11 +30,6 @@ class IvaTaxSeed extends Seeder
                 'state' => 'active',
             ],
             [
-                'code' => 10,
-                'percentage' => 13,
-                'state' => 'active',
-            ],
-            [
                 'code' => 4,
                 'percentage' => 15,
                 'state' => 'active',

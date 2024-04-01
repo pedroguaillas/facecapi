@@ -28,7 +28,9 @@ class Order extends Model
         // Metodo de pago
         'pay_method',
         // Nota de Credito
-        'date_order', 'serie_order', 'reason'
+        'date_order', 'serie_order', 'reason',
+        // Cambio del % IVA
+        'base5', 'base15', 'iva5', 'iva15'
     ];
 
     public function orderitems()

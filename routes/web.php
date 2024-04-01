@@ -20,10 +20,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->get('refreshtoken', 'AuthController@refreshToken');
 });
 
-// $router->group(['middleware' => 'jwt.refresh'], function ($router) {
-//     $router->get('refreshtoken', 'AuthController@refreshToken');
-// });
-
 $router->group(['middleware' => 'jwt.verify'], function ($router) {
 
     // me

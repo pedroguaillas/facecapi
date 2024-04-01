@@ -382,16 +382,6 @@ class OrderXmlController extends Controller
                 $taxIva->percentage = $tax->percentage;
                 $taxIva->base = $total;
                 $taxes[] = $taxIva;
-                // $aux = [
-                //     'code' => 2, //Impuesto al IVA
-                //     // percentageCode: 0 0% - 2 12$ - 6 No objeto de IVA
-                //     'percentageCode' => $tax->iva,
-                //     'percentage' => $tax->percentage,
-                //     'base' => $total
-                // ];
-                // $aux = json_encode($aux);
-                // $aux = json_decode($aux);
-                // $taxes[] = $aux;
             }
 
             // Impuesto al ICE
