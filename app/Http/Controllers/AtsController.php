@@ -127,7 +127,7 @@ class AtsController extends Controller
             $this->_($dom, $detalleCompras, 'idProv', $shop->identication);
             $this->_($dom, $detalleCompras, 'tipoComprobante', str_pad($shop->voucher_type, 2, 0, STR_PAD_LEFT));
             $this->_($dom, $detalleCompras, 'tipoProv', $shop->type_identification === 'ruc' && (substr($shop->identication, 2, 1) === '9' || substr($shop->identication, 2, 1) === '6') ? '02' : '01');
-            $this->_($dom, $detalleCompras, 'denoProv', $shop->name);
+            $this->_($dom, $detalleCompras, 'denoProv', $this->removeOtherCharacter($shop->name));
             $this->_($dom, $detalleCompras, 'parteRel', 'NO');
 
             $date = Carbon::createFromFormat('Y-m-d', $shop->date)->format('d/m/Y');
@@ -261,5 +261,28 @@ class AtsController extends Controller
     private function _($dom, $xmlRoot, $name, $value)
     {
         $xmlRoot->appendChild($dom->createElement($name, $value));
+    }
+
+    private function removeOtherCharacter($deno)
+    {
+        $permit = array("á", "é", "í", "ó", "ú", "ñ", "&");
+        $replace = array("a", "e", "i", "o", "u", "n", "y");
+        $deno = str_replace($permit, $replace, $deno);
+
+        $permit = array("Á", "É", "Í", "Ó", "Ú", "Ñ", "&");
+        $deno = str_replace($permit, $replace, $deno);
+
+        $deno = strtoupper($deno);
+
+        $count  = strlen($deno);
+        $newc = str_split($deno);
+
+        for ($i = 0; $i < $count; $i++) {
+            if (($newc[$i] < 'A' || $newc[$i] > 'Z') && $newc[$i] != ' ') {
+                $deno = str_replace($newc[$i], '', $deno);
+            }
+        }
+
+        return $deno;
     }
 }

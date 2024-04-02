@@ -24,7 +24,9 @@ class Shop extends Model
         // Retención electrónica
         'state_retencion', 'autorized_retention',
         'authorization_retention', 'xml_retention',
-        'extra_detail_retention'
+        'extra_detail_retention',
+        // Actualizacion del IVA
+        'base5', 'base15', 'iva5', 'iva15'
     ];
 
     public function shopitems()
