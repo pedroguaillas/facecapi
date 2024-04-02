@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\Shop;
+use App\Models\ShopRetentionItem;
 use Illuminate\Support\Carbon;
 
 class AtsController extends Controller
@@ -72,11 +73,32 @@ class AtsController extends Controller
         $this->_($domtree, $xmlRoot, 'codigoOperativo', 'IVA');
 
         // Carga de compras
+        // Provider
+        $select = 'p.type_identification,p.identication,p.name,';
+        // Order
+        $select .= 'voucher_type,date,serie,authorization,no_iva,base0,base12,ice,iva,';
+        // Retention
+        $select .= 'serie_retencion,date_retention,autorized_retention,';
+        // Retention IVA Items
+        $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 9) AS r10,';
+        $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 10) AS r20,';
+        $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 1) AS r30,';
+        $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 11) AS r50,';
+        $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 2) AS r70,';
+        $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 3) AS r100,';
+        // Retention Renta Items
+        $select .= 'sri.tax_code,sri.base,sri.porcentage,sri.value';
+
         $shops = Shop::join('providers AS p', 'provider_id', 'p.id')
-            ->selectRaw('p.type_identification AS ti,p.identication,voucher_type,p.name,date,serie,authorization,no_iva,base0,base12,ice,iva')
+            ->leftJoin('shop_retention_items AS sri', function ($query) {
+                $query->on('sri.shop_id', 'shops.id')
+                    ->where('code', 1);
+            })
+            ->selectRaw($select)
             ->whereYear('date', $year)
-            ->whereMonth('date', $month)
-            ->get();
+            ->whereMonth('date', $month);
+
+        $shops = $shops->get();
 
         if ($shops->count()) {
             $this->loadCompras($domtree, $xmlRoot, $shops);
@@ -95,14 +117,18 @@ class AtsController extends Controller
     {
         $compras = $xmlRoot->appendChild($dom->createElement("compras"));
 
-        foreach ($shops as $shop) {
+        for ($i = 0; $i < $shops->count(); $i++) {
+
+            $shop = $shops[$i];
+
             $detalleCompras = $compras->appendChild($dom->createElement("detalleCompras"));
 
-            $this->_($dom, $detalleCompras, 'codSustento', $shop->voucher_type === '2' ? '02' : '01');
+            $this->_($dom, $detalleCompras, 'codSustento', $shop->voucher_type === 2 ? '02' : '01');
             $this->_($dom, $detalleCompras, 'tpIdProv', $shop->type_identification === 'ruc' ? '01' : ($shop->type_identification === 'cédula' ? '02' : '03'));
             $this->_($dom, $detalleCompras, 'idProv', $shop->identication);
             $this->_($dom, $detalleCompras, 'tipoComprobante', str_pad($shop->voucher_type, 2, 0, STR_PAD_LEFT));
-            $this->_($dom, $detalleCompras, 'tipoProv', $shop->type_identification === 'ruc' && (substr($shop->type_identification, 2, 1) === '9' || substr($shop->type_identification, 2, 1) === '6') ? '02' : '01');
+            $this->_($dom, $detalleCompras, 'tipoProv', $shop->type_identification === 'ruc' && (substr($shop->identication, 2, 1) === '9' || substr($shop->identication, 2, 1) === '6') ? '02' : '01');
+            $this->_($dom, $detalleCompras, 'denoProv', $shop->name);
             $this->_($dom, $detalleCompras, 'parteRel', 'NO');
 
             $date = Carbon::createFromFormat('Y-m-d', $shop->date)->format('d/m/Y');
@@ -119,12 +145,13 @@ class AtsController extends Controller
             $this->_($dom, $detalleCompras, 'baseImpExe', 0);
             $this->_($dom, $detalleCompras, 'montoIce', $shop->ice);
             $this->_($dom, $detalleCompras, 'montoIva', $shop->iva);
-            $this->_($dom, $detalleCompras, 'valRetBien10', 0);
-            $this->_($dom, $detalleCompras, 'valRetServ20', 0);
-            $this->_($dom, $detalleCompras, 'valorRetBienes', 0);
-            $this->_($dom, $detalleCompras, 'valRetServ50', 0);
-            $this->_($dom, $detalleCompras, 'valorRetServicios', 0);
-            $this->_($dom, $detalleCompras, 'valRetServ100', 0);
+
+            $this->_($dom, $detalleCompras, 'valRetBien10', $shop->r10 ?? 0);
+            $this->_($dom, $detalleCompras, 'valRetServ20', $shop->r20 ?? 0);
+            $this->_($dom, $detalleCompras, 'valorRetBienes', $shop->r30 ?? 0);
+            $this->_($dom, $detalleCompras, 'valRetServ50', $shop->r50 ?? 0);
+            $this->_($dom, $detalleCompras, 'valorRetServicios', $shop->r70 ?? 0);
+            $this->_($dom, $detalleCompras, 'valRetServ100', $shop->r100 ?? 0);
             $this->_($dom, $detalleCompras, 'valorRetencionNc', 0);
             $this->_($dom, $detalleCompras, 'totbasesImpReemb', 0);
 
@@ -134,9 +161,33 @@ class AtsController extends Controller
             $this->_($dom, $pagoExterior, 'aplicConvDobTrib', 'NA');
             $this->_($dom, $pagoExterior, 'pagExtSujRetNorLeg', 'NA');
 
-            $formasDePago = $detalleCompras->appendChild($dom->createElement("formasDePago"));
-            $base = $shop->no_iva + $shop->base0 - $shop->base12;
-            $this->_($dom, $formasDePago, 'formaPago', $base > 999.99 ? '20' : '01');
+            if ($shop->voucher_type !== 3) {
+                $formasDePago = $detalleCompras->appendChild($dom->createElement("formasDePago"));
+                $j = $i;
+
+                while ($j < count($shops) && $shop->serie === $shops[$j]->serie && $shop->voucher_type === $shops[$j]->voucher_type && $shop->identication === $shops[$j]->identication) {
+                    $this->_($dom, $formasDePago, 'formaPago', $shops[$j]->base > 999.99 ? '20' : '01');
+                    $j++;
+                }
+            }
+
+            if ($shop->tax_code !== null) {
+
+                $air = $detalleCompras->appendChild($dom->createElement("air"));
+
+                $j = $i;
+
+                while ($j < count($shops) && $shop->serie === $shops[$j]->serie && $shop->voucher_type === $shops[$j]->voucher_type && $shop->identication === $shops[$j]->identication) {
+                    $detalleAir = $air->appendChild($dom->createElement("detalleAir"));
+                    $this->_($dom, $detalleAir, 'codRetAir', $shops[$j]->tax_code);
+                    $this->_($dom, $detalleAir, 'baseImpAir', $shops[$j]->base);
+                    $this->_($dom, $detalleAir, 'porcentajeAir', $shops[$j]->porcentage);
+                    $this->_($dom, $detalleAir, 'valRetAir', $shops[$j]->value);
+
+                    $j++;
+                    $i++;
+                }
+            }
         }
     }
 
