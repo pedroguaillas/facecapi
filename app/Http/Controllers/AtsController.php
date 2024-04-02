@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\Shop;
-use App\Models\ShopRetentionItem;
 use Illuminate\Support\Carbon;
 
 class AtsController extends Controller
@@ -78,7 +77,7 @@ class AtsController extends Controller
         // Order
         $select .= 'voucher_type,date,serie,authorization,no_iva,base0,base12,ice,iva,';
         // Retention
-        $select .= 'serie_retencion,date_retention,autorized_retention,';
+        $select .= 'serie_retencion,date_retention,authorization_retention,';
         // Retention IVA Items
         $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 9) AS r10,';
         $select .= '(SELECT SUM(value) FROM shop_retention_items WHERE shop_retention_items.shop_id = shops.id AND shop_retention_items.code = 2 AND shop_retention_items.tax_code = 10) AS r20,';
@@ -165,10 +164,10 @@ class AtsController extends Controller
                 $formasDePago = $detalleCompras->appendChild($dom->createElement("formasDePago"));
                 $j = $i;
 
-                while ($j < count($shops) && $shop->serie === $shops[$j]->serie && $shop->voucher_type === $shops[$j]->voucher_type && $shop->identication === $shops[$j]->identication) {
+                do {
                     $this->_($dom, $formasDePago, 'formaPago', $shops[$j]->base > 999.99 ? '20' : '01');
                     $j++;
-                }
+                } while ($j < count($shops) && $shop->serie === $shops[$j]->serie && $shop->voucher_type === $shops[$j]->voucher_type && $shop->identication === $shops[$j]->identication);
             }
 
             if ($shop->tax_code !== null) {
@@ -177,7 +176,7 @@ class AtsController extends Controller
 
                 $j = $i;
 
-                while ($j < count($shops) && $shop->serie === $shops[$j]->serie && $shop->voucher_type === $shops[$j]->voucher_type && $shop->identication === $shops[$j]->identication) {
+                do {
                     $detalleAir = $air->appendChild($dom->createElement("detalleAir"));
                     $this->_($dom, $detalleAir, 'codRetAir', $shops[$j]->tax_code);
                     $this->_($dom, $detalleAir, 'baseImpAir', $shops[$j]->base);
@@ -185,8 +184,26 @@ class AtsController extends Controller
                     $this->_($dom, $detalleAir, 'valRetAir', $shops[$j]->value);
 
                     $j++;
-                    $i++;
-                }
+                } while ($j < count($shops) && $shop->serie === $shops[$j]->serie && $shop->voucher_type === $shops[$j]->voucher_type && $shop->identication === $shops[$j]->identication);
+                $i = $j - 1;
+            }
+
+            // Retencion info
+            if ($shop->tax_code !== null && $shop->tax_code !== '332') {
+                $this->_($dom, $detalleCompras, 'estabRetencion1', substr($shop->serie_retencion, 0, 3));
+                $this->_($dom, $detalleCompras, 'ptoEmiRetencion1', substr($shop->serie_retencion, 4, 3));
+                $this->_($dom, $detalleCompras, 'secRetencion1', substr($shop->serie_retencion, 8));
+                $this->_($dom, $detalleCompras, 'autRetencion1', $shop->authorization_retention);
+                $this->_($dom, $detalleCompras, 'fechaEmiRet1', $date);
+            }
+
+            //Notas
+            if ($shop->voucher_type === 5 || $shop->voucher_type === 4) {
+                $this->_($dom, $detalleCompras, 'docModificado', '01');
+                $this->_($dom, $detalleCompras, 'estabModificado', substr($shop->serie, 0, 3));
+                $this->_($dom, $detalleCompras, 'ptoEmiModificado', substr($shop->serie, 4, 3));
+                $this->_($dom, $detalleCompras, 'secModificado', substr($shop->serie, 8));
+                $this->_($dom, $detalleCompras, 'autModificado', $shop->authorization);
             }
         }
     }
