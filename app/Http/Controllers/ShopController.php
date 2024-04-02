@@ -104,7 +104,8 @@ class ShopController extends Controller
                         'product_id' => $product['product_id'],
                         'quantity' => $product['quantity'],
                         'price' => $product['price'],
-                        'discount' => $product['discount']
+                        'discount' => $product['discount'],
+                        'iva' => $product['iva'],
                     ];
                 }
 
