@@ -33,6 +33,9 @@
                     <th>Valor Retenido</th>
                 </tr>
             </thead>
+            @php
+            $sum = 0;
+            @endphp
             <tbody>
                 @foreach($retention_items as $item)
                 <tr>
@@ -47,8 +50,17 @@
                     <td style="padding: .1em; text-align: center;">{{ $item->porcentage }}</td>
                     <td style="padding: .1em; text-align: right;">{{ number_format($item->value, 2) }}</td>
                 </tr>
+                @php
+                $sum += $item->value;
+                @endphp
                 @endforeach
             </tbody>
+            <tfoot>
+                <tr>
+                    <th style="padding-right: 1em; text-align: right;" colspan="7">TOTAL RETENIDO</th>
+                    <th style="padding: .1em; text-align: right;">{{ number_format($sum, 2) }}</th>
+                </tr>
+            </tfoot>
         </table>
     </td>
 </tr>

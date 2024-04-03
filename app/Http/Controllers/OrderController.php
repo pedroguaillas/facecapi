@@ -250,6 +250,13 @@ class OrderController extends Controller
             ->where('orders.id', $id)
             ->first();
 
+        $after = false;
+        $dateToCheck = Carbon::parse($movement->date);
+
+        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+            $after = true;
+        }
+
         $movement_items = OrderItem::join('products', 'products.id', 'order_items.product_id')
             ->select('products.*', 'order_items.*')
             ->where('order_items.order_id', $id)
@@ -259,7 +266,7 @@ class OrderController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        $pdf = PDF::loadView('vouchers/printf', compact('movement', 'company', 'movement_items'));
+        $pdf = PDF::loadView('vouchers/printf', compact('movement', 'company', 'movement_items', 'after'));
         $pdf->setPaper(array(0, 0, (8 / 2.54) * 72, (10 / 2.54) * 72), 'portrait');
 
         return $pdf->stream();
