@@ -7,15 +7,15 @@
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->base5, 2) }}</td>
             </tr>
             @endif
-            @if($after)
-            <tr>
-                <td style=" width:160px;" class="relleno">SUBTOTAL 12%</td>
-                <td style=" width:85px; padding-right: .5em; text-align: right;">{{ number_format($movement->base12, 2) }}</td>
-            </tr>
-            @else
+            @if(!$after)
             <tr>
                 <td style=" width:160px;" class="relleno">SUBTOTAL 15%</td>
                 <td style=" width:85px; padding-right: .5em; text-align: right;">{{ number_format($movement->base15, 2) }}</td>
+            </tr>
+            @else
+            <tr>
+                <td style=" width:160px;" class="relleno">SUBTOTAL 12%</td>
+                <td style=" width:85px; padding-right: .5em; text-align: right;">{{ number_format($movement->base12, 2) }}</td>
             </tr>
             @endif
             <tr>
@@ -44,15 +44,15 @@
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva5, 2) }}</td>
             </tr>
             @endif
-            @if($after)
-            <tr>
-                <td class="relleno">IVA 12%</td>
-                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva, 2) }}</td>
-            </tr>
-            @else
+            @if(!$after)
             <tr>
                 <td class="relleno">IVA 15%</td>
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva15, 2) }}</td>
+            </tr>
+            @else
+            <tr>
+                <td class="relleno">IVA 12%</td>
+                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva, 2) }}</td>
             </tr>
             @endif
             <tr>

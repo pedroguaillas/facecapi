@@ -42,7 +42,7 @@ class OrderXmlController extends Controller
         }
 
         $order_items = OrderItem::join('products AS p', 'p.id', 'product_id')
-            ->join('iva_taxes AS it', 'it.code', 'p.iva')
+            ->join('iva_taxes AS it', 'it.code', 'order_items.iva')
             ->selectRaw('quantity,price,discount,order_items.ice AS valice,p.code AS codeproduct,name,it.code AS iva,it.percentage,p.ice AS codice')
             ->where('order_id', $id)
             ->get();

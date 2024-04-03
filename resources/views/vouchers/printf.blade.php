@@ -65,12 +65,25 @@
     <div>------------------------------------------------------------------------------------</div>
     <table style="width: 100%;">
         <tbody>
+            @if($movement->base5 > 0)
             <tr>
-                <td>SUBTOTAL IVA 12%</td>
+                <td>SUBTOTAL 5%</td>
+                <td style="text-align: right;">{{ number_format($movement->base5, 2) }}</td>
+            </tr>
+            @endif
+            @if(!$after)
+            <tr>
+                <td>SUBTOTAL 15%</td>
+                <td style="text-align: right;">{{ number_format($movement->base15, 2) }}</td>
+            </tr>
+            @else
+            <tr>
+                <td>SUBTOTAL 12%</td>
                 <td style="text-align: right;">{{ number_format($movement->base12, 2) }}</td>
             </tr>
+            @endif
             <tr>
-                <td>SUBTOTAL IVA 0%</td>
+                <td>SUBTOTAL 0%</td>
                 <td style="text-align: right;">{{ number_format($movement->base0, 2) }}</td>
             </tr>
             <tr>
@@ -79,15 +92,22 @@
                     number_format($movement->base12 + $movement->base0 + $movement->no_iva, 2)
                 }}</td>
             </tr>
+            @if(!$after)
+            <tr>
+                <td>IVA 15%</td>
+                <td style="text-align: right;">{{ number_format($movement->iva15, 2) }}</td>
+            </tr>
+            @else
             <tr>
                 <td>IVA 12%</td>
                 <td style="text-align: right;">{{ number_format($movement->iva, 2) }}</td>
             </tr>
+            @endif
             <tr>
                 <th>TOTAL</th>
-                <th style="text-align: right;">{{
-                    number_format($movement->total, 2)
-                }}</th>
+                <th style="text-align: right;">
+                    {{ number_format($movement->total, 2) }}
+                </th>
             </tr>
         </tbody>
     </table>
