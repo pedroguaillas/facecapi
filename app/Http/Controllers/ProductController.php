@@ -138,21 +138,24 @@ class ProductController extends Controller
 
         $prods = $request->get('prods');
 
-        $products = Product::where('branch_id', $branch->id)
+        $products = Product::select('id', 'code', 'name', 'price1', 'iva')
+            ->where('branch_id', $branch->id)
             ->whereIn('code', $this->toArrayCodes($prods))
             ->get();
 
         $order_items = [];
 
         foreach ($products as $product) {
-            $quantity = $this->findObjectById($product->code, $prods);
+            $prod = $this->findObjectById($product->code, $prods);
+            $price = $prod['price'] ?? floatval($product->price1);
+            $product->price1 = $price;
             array_push($order_items, [
                 'product_id' => $product->id,
                 'discount' => 0,
                 'iva' => $product->iva,
-                'price' => $product->price1,
-                'quantity' => $quantity,
-                'total_iva' => $product->price1 * $quantity
+                'price' => $price,
+                'quantity' => $prod['quantity'],
+                'total_iva' => $price * $prod['quantity']
             ]);
         }
 
@@ -175,7 +178,10 @@ class ProductController extends Controller
     {
         foreach ($array as $element) {
             if ($id == $element['code']) {
-                return $element['quantity'];
+                return [
+                    'quantity' => $element['quantity'],
+                    'price' => $element['price']
+                ];
             }
         }
 
