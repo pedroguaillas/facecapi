@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Http\Resources\ProviderResources;
+use Illuminate\Support\Facades\Http;
 use App\Models\Branch;
 use App\Models\Provider;
 
@@ -61,6 +62,63 @@ class ProviderController extends Controller
                 ]);
             }
         }
+    }
+
+    public function searchByRuc(string $identification)
+    {
+        $result = null;
+        // Consultar en todo el sistema
+        $providers = Provider::select('id', 'branch_id', 'name', 'address', 'phone', 'email')
+            ->where([
+                'identication' => $identification,
+                'type_identification' => 'ruc',
+            ])
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        // Si existe registros
+        if ($providers->count()) {
+            $result = $providers->first();
+
+            $auth = Auth::user();
+            $level = $auth->companyusers->first();
+            $company = Company::find($level->level_id);
+            $branch = Branch::where('company_id', $company->id)
+                ->orderBy('created_at')->first();
+
+            // recorrer para buscar tal vez pertenezca a la empresa
+            $enc = false;
+
+            foreach ($providers as $provider) {
+                if ($provider->branch_id === $branch->id) {
+                    // retornar con la empresa o sino retornar el primero
+                    $enc = true;
+                    $result = $provider;
+                }
+            }
+            if (!$enc) {
+                $result->branch_id = 0;
+            }
+        } else {
+            // Si no existe registros en el sistema consultar en la API
+            $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatosSri/RucSri', [
+                'Ruc' => $identification,
+                'Apikey' => env('END_POINT_API_Key'),
+            ]);
+
+            if ($response['razonSocial'] === null) {
+                return;
+            } {
+                // Ajustar la respuesta
+                $result = [
+                    'branch_id' => 0,
+                    'name' => $response['razonSocial'],
+                    'address' => $response['establecimientos'][0]['direccionCompleta'],
+                ];
+            }
+        }
+
+        return response()->json(['provider' => $result]);
     }
 
     public function edit($id)

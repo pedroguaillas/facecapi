@@ -341,7 +341,8 @@ class OrderController extends Controller
                         'quantity' => $product['quantity'],
                         'price' => $product['price'],
                         'discount' => $product['discount'],
-                        'ice' => $product['ice'] ?? 0
+                        'ice' => $product['ice'] ?? 0,
+                        'iva' => $product['iva']
                     ];
                 }
                 OrderItem::where('order_id', $order->id)->delete();

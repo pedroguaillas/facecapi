@@ -168,6 +168,7 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->get('providers/{id}/edit', 'ProviderController@edit');
     $router->put('providers/{id}', 'ProviderController@update');
     $router->post('providers_import_csv', 'ProviderController@importCsv');
+    $router->get('providers/searchByRuc/{identification}', 'ProviderController@searchByRuc');
 
     // Transportistas
     $router->post('carrierlist', 'CarrierController@carrierlist');
