@@ -75,7 +75,6 @@ class CustomerController extends Controller
         // Si existe registros
         if ($customers->count()) {
             $result = $customers->first();
-            $result->branch_id = 0;
 
             $auth = Auth::user();
             $level = $auth->companyusers->first();
@@ -84,12 +83,16 @@ class CustomerController extends Controller
                 ->orderBy('created_at')->first();
 
             // recorrer para buscar tal vez pertenezca a la empresa
+            $enc = false;
             foreach ($customers as $customer) {
                 if ($customer->branch_id === $branch->id) {
                     // retornar con la empresa o sino retornar el primero
-                    $customer->pertenece = true;
+                    $enc = true;
                     $result = $customer;
                 }
+            }
+            if (!$enc) {
+                $result->branch_id = 0;
             }
         } else {
             // Si no existe registros en el sistema consultar en la API
@@ -128,7 +131,6 @@ class CustomerController extends Controller
         // Si existe registros
         if ($customers->count()) {
             $result = $customers->first();
-            $result->branch_id = 0;
 
             $auth = Auth::user();
             $level = $auth->companyusers->first();
@@ -137,12 +139,16 @@ class CustomerController extends Controller
                 ->orderBy('created_at')->first();
 
             // recorrer para buscar tal vez pertenezca a la empresa
+            $enc = false;
             foreach ($customers as $customer) {
                 if ($customer->branch_id === $branch->id) {
                     // retornar con la empresa o sino retornar el primero
-                    $customer->pertenece = true;
+                    $enc = true;
                     $result = $customer;
                 }
+            }
+            if (!$enc) {
+                $result->branch_id = 0;
             }
         } else {
             // Si no existe registros en el sistema consultar en la API
