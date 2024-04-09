@@ -172,8 +172,9 @@ class OrderController extends Controller
             ->where('order_id', $order->id)
             ->get();
 
-        $orderitems = Product::join('order_items AS oi', 'product_id', 'products.id')
-            ->select('products.ice AS codice', 'oi.*')
+        $orderitems = OrderItem::join('products', 'product_id', 'products.id')
+            ->join('iva_taxes AS it', 'it.code', 'order_items.iva')
+            ->selectRaw('quantity,price,discount,order_items.ice,products.ice AS codice,product_id,it.code AS iva,it.percentage')
             ->where('order_id', $order->id)
             ->get();
 
