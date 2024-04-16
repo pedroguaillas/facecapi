@@ -170,7 +170,8 @@ class OrderXmlController extends Controller
             // Solo en caso del impuesto al IVA poner la <tarifa>
             // $string .= "<tarifa>$tax->percentage</tarifa>";
             // El valor varia en dependecia del impuesto
-            $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentage === 12 ? $order->iva : 0) : $order->ice) . "</valor>";
+            $string .= "<valor>" . ($tax->code === 2 ? round($tax->base * $tax->percentage / 100, 2) : $order->ice) . "</valor>";
+            // $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentage === 12 ? $order->iva : 0) : $order->ice) . "</valor>";
             $string .= "</totalImpuesto>";
         }
 
@@ -183,9 +184,9 @@ class OrderXmlController extends Controller
         $string .= '<detalles>';
         foreach ($order_items as $detail) {
             $sub_total = $detail->quantity * $detail->price;
-            $discount = round($sub_total * $detail->discount * .01, 2);
-            $total = $sub_total + $detail->valice - $discount;
-            $percentage = $detail->iva === 2 ? 12 : 0;
+            // $discount = round($sub_total * $detail->discount * .01, 2);
+            $total = round($sub_total + $detail->valice - $detail->discount, 2);
+            // $percentage = $detail->iva === 2 ? 12 : 0;
 
             $string .= "<detalle>";
 
@@ -194,16 +195,16 @@ class OrderXmlController extends Controller
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
             $string .= "<descuento>$detail->discount</descuento>";
-            $string .= "<precioTotalSinImpuesto>" . round($sub_total, 2) . "</precioTotalSinImpuesto>";
+            $string .= "<precioTotalSinImpuesto>" . round($total, 2) . "</precioTotalSinImpuesto>";
 
             $string .= "<impuestos>";
 
             $string .= "<impuesto>";
             $string .= "<codigo>2</codigo>";
             $string .= "<codigoPorcentaje>$detail->iva</codigoPorcentaje>";
-            $string .= "<tarifa>$percentage</tarifa>";
+            $string .= "<tarifa>$detail->percentage</tarifa>";
             $string .= "<baseImponible>" . round($total, 2) . "</baseImponible>";
-            $string .= "<valor>" . round($percentage * $total * .01, 2) . "</valor>";
+            $string .= "<valor>" . round($detail->percentage * $total * .01, 2) . "</valor>";
             $string .= "</impuesto>";
 
             // Impuesto del Monto ICE opcional
@@ -300,9 +301,7 @@ class OrderXmlController extends Controller
         $string .= '<detalles>';
         foreach ($order_items as $detail) {
             $sub_total = $detail->quantity * $detail->price;
-            // $discount = round($sub_total * $detail->discount * .01, 2);
             $total = round($sub_total + $detail->valice - $detail->discount, 2);
-            // $percentage = $detail->iva === 2 ? 12 : 0;
 
             $string .= "<detalle>";
 

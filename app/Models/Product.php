@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
+    protected $casts = [
+        'price1' => 'float',
+    ];
+
     protected $fillable = [
         'branch_id', 'category_id', 'code', 'type_product', 'name',
         'unity_id', 'price1', 'price2', 'price3', 'iva', 'ice', 'irbpnr',

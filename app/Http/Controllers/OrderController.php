@@ -236,7 +236,7 @@ class OrderController extends Controller
                 $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after'));
                 break;
             case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals'));
+                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after'));
                 break;
         }
 
@@ -436,7 +436,7 @@ class OrderController extends Controller
             unlink($filename);
 
             return $content;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             exit($e->getMessage());
         }
 
