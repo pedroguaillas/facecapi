@@ -57,7 +57,7 @@
             <tbody>
                 <tr>
                     <td style="text-align: center; width: 5em;">{{ $item->code }}</td>
-                    <td style="text-align: center; width: 4em;">{{ number_format($item->quantity, $company->decimal) }}</td>
+                    <td style="text-align: center; width: 4em;">{{ floatval($item->quantity) }}</td>
                     <td>{{ $item->name }}</td>
                     <td style="text-align: right; width: 5em;">{{ number_format($item->price, $company->decimal) }}</td>
                     <td style="text-align: right; width: 5em;">{{ number_format($item->discount, 2) }}</td>
