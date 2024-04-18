@@ -25,15 +25,13 @@ class AtsController extends Controller
         //ATS/---------------------
         $domtree = new \DOMDocument('1.0', 'ISO-8859-1');
 
-        /* create the root element of the xml tree */
         $xmlRoot = $domtree->createElement("iva");
-        /* append it to the document created */
         $xmlRoot = $domtree->appendChild($xmlRoot);
 
         //Informante/---------------
         $this->_($domtree, $xmlRoot, 'TipoIDInformante', 'R');
         $this->_($domtree, $xmlRoot, 'IdInformante', $company->ruc);
-        $this->_($domtree, $xmlRoot, 'razonSocial', $company->company);
+        $this->_($domtree, $xmlRoot, 'razonSocial', $this->removeOtherCharacter($company->company));
         $this->_($domtree, $xmlRoot, 'Anio', $year);
         $this->_($domtree, $xmlRoot, 'Mes', $month);
 
