@@ -33,7 +33,7 @@ class AtsController extends Controller
         //Informante/---------------
         $this->_($domtree, $xmlRoot, 'TipoIDInformante', 'R');
         $this->_($domtree, $xmlRoot, 'IdInformante', $company->ruc);
-        $this->_($domtree, $xmlRoot, 'razonSocial', $company->company);
+        $this->_($domtree, $xmlRoot, 'razonSocial', $this->removeOtherCharacter($company->company));
         $this->_($domtree, $xmlRoot, 'Anio', $year);
         $this->_($domtree, $xmlRoot, 'Mes', $month);
 
