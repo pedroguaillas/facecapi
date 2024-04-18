@@ -94,8 +94,13 @@ class AtsController extends Controller
                     ->where('code', 1);
             })
             ->selectRaw($select)
+            ->where('shops.branch_id', $branch->id)
             ->whereYear('date', $year)
-            ->whereMonth('date', $month);
+            ->whereMonth('date', $month)
+            ->where(function ($query) {
+                $query->where('shops.state', 'AUTORIZADO')
+                    ->orWhere('shops.state_retencion', 'AUTORIZADO');
+            });
 
         $shops = $shops->get();
 
