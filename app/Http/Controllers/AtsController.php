@@ -25,9 +25,7 @@ class AtsController extends Controller
         //ATS/---------------------
         $domtree = new \DOMDocument('1.0', 'ISO-8859-1');
 
-        /* create the root element of the xml tree */
         $xmlRoot = $domtree->createElement("iva");
-        /* append it to the document created */
         $xmlRoot = $domtree->appendChild($xmlRoot);
 
         //Informante/---------------
