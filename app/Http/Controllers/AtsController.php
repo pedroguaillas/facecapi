@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\Shop;
-use Illuminate\Support\Carbon;
 
 class AtsController extends Controller
 {
@@ -35,23 +35,23 @@ class AtsController extends Controller
         $this->_($domtree, $xmlRoot, 'Anio', $year);
         $this->_($domtree, $xmlRoot, 'Mes', $month);
 
-        $ventasEstablecimiento = Order::selectRaw('SUBSTRING(serie, 1, 3) AS asserie,SUM(base0) AS b0, SUM(base12) AS b12')
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month)
-            ->where([
-                'branch_id' => $branch->id,
-                'state' => 'AUTORIZADO',
-            ])
-            ->groupBy('asserie')
-            ->orderBy('asserie', 'DESC')
-            ->get();
+        // $ventasEstablecimiento = Order::selectRaw('SUBSTRING(serie, 1, 3) AS asserie,SUM(base0) AS b0, SUM(base12) AS b12')
+        //     ->whereYear('date', $year)
+        //     ->whereMonth('date', $month)
+        //     ->where([
+        //         'branch_id' => $branch->id,
+        //         'state' => 'AUTORIZADO',
+        //     ])
+        //     ->groupBy('asserie')
+        //     ->orderBy('asserie', 'DESC')
+        //     ->get();
 
-        $est = $ventasEstablecimiento->count() > 0 ? $ventasEstablecimiento->first()->asserie : '001';
+        // $est = $ventasEstablecimiento->count() > 0 ? $ventasEstablecimiento->first()->asserie : '001';
 
-        $this->_($domtree, $xmlRoot, 'numEstabRuc', $est);
+        $this->_($domtree, $xmlRoot, 'numEstabRuc', '001');
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
-            ->selectRaw('type_identification,identication,voucher_type,COUNT(*) as numeroComprobantes,SUM(base0) AS base0,SUM(base12) AS base12,SUM(iva) AS iva,SUM(ice) AS ice')
+            ->selectRaw('type_identification,identication,voucher_type,COUNT(*) as numeroComprobantes,SUM(base0) AS base0,SUM(base5) AS base5,SUM(base12) AS base12,SUM(base15) AS base15,SUM(iva5) AS iva5,SUM(iva) AS iva,SUM(iva15) AS iva15,SUM(ice) AS ice')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->where([
@@ -73,7 +73,7 @@ class AtsController extends Controller
         // Provider
         $select = 'p.type_identification,p.identication,p.name,';
         // Order
-        $select .= 'voucher_type,date,serie,authorization,no_iva,base0,base12,ice,iva,';
+        $select .= 'voucher_type,date,serie,authorization,no_iva,base0,base5,base12,base15,ice,iva5,iva,iva15,';
         // Retention
         $select .= 'serie_retencion,date_retention,authorization_retention,';
         // Retention IVA Items
@@ -107,9 +107,9 @@ class AtsController extends Controller
         }
 
         // Carga de ventas
-        if ($order->count()) {
+        if ($orders->count()) {
             $this->loadOrders($domtree, $xmlRoot, $orders);
-            $this->loadVentasEstablecimiento($domtree, $xmlRoot, $ventasEstablecimiento);
+            $this->loadVentasEstablecimiento($domtree, $xmlRoot, $bases);
         }
 
         return $domtree->saveXML();
@@ -143,10 +143,10 @@ class AtsController extends Controller
             $this->_($dom, $detalleCompras, 'autorizacion', $shop->authorization);
             $this->_($dom, $detalleCompras, 'baseNoGraIva', $shop->no_iva);
             $this->_($dom, $detalleCompras, 'baseImponible', $shop->base0);
-            $this->_($dom, $detalleCompras, 'baseImpGrav', $shop->base12);
+            $this->_($dom, $detalleCompras, 'baseImpGrav', $shop->base5 + $shop->base12 + $shop->base15);
             $this->_($dom, $detalleCompras, 'baseImpExe', 0);
             $this->_($dom, $detalleCompras, 'montoIce', $shop->ice);
-            $this->_($dom, $detalleCompras, 'montoIva', $shop->iva);
+            $this->_($dom, $detalleCompras, 'montoIva', $shop->iva5 + $shop->iva + $shop->iva15);
 
             $this->_($dom, $detalleCompras, 'valRetBien10', $shop->r10 ?? 0);
             $this->_($dom, $detalleCompras, 'valRetServ20', $shop->r20 ?? 0);
@@ -211,19 +211,15 @@ class AtsController extends Controller
         }
     }
 
-    private function loadVentasEstablecimiento($dom, $xmlRoot, $ordersEst)
+    private function loadVentasEstablecimiento($dom, $xmlRoot, $total)
     {
         $ventasEstablecimiento = $xmlRoot->appendChild($dom->createElement("ventasEstablecimiento"));
 
-        foreach ($ordersEst as $order) {
-            // Falta llenar los espaciones de los establecimientos en 0
-            // Recorrer desde el establecimiento 1 hasta el que existe con valores en 0
-            $ventaEst = $ventasEstablecimiento->appendChild($dom->createElement("ventaEst"));
+        $ventaEst = $ventasEstablecimiento->appendChild($dom->createElement("ventaEst"));
 
-            $this->_($dom, $ventaEst, 'codEstab', $order->asserie);
-            $this->_($dom, $ventaEst, 'ventasEstab', $order->b0 + $order->b12);
-            $this->_($dom, $ventaEst, 'ivaComp', 0);
-        }
+        $this->_($dom, $ventaEst, 'codEstab', '001');
+        $this->_($dom, $ventaEst, 'ventasEstab', $total);
+        $this->_($dom, $ventaEst, 'ivaComp', 0);
     }
 
     private function loadOrders($dom, $xmlRoot, $orders)

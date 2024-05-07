@@ -383,26 +383,42 @@ class OrderController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
+        $after = false;
+        $dateToCheck = Carbon::parse($month . '-01');
+
+        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+            $after = true;
+        }
+
         $year = substr($month, 0, 4);
         $month = substr($month, 5, 2);
 
+        $columns = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N');
+        $col = 0;
+
         $spreadsheet = new Spreadsheet();
         $activeWorksheet = $spreadsheet->getActiveSheet();
-        $activeWorksheet->setCellValue('A1', 'Identificación');
-        $activeWorksheet->setCellValue('B1', 'Cliente');
-        $activeWorksheet->setCellValue('C1', 'Comprobante');
-        $activeWorksheet->setCellValue('D1', 'Fecha');
-        $activeWorksheet->setCellValue('E1', 'Autorización');
-        $activeWorksheet->setCellValue('F1', 'N° de comprobante');
-        $activeWorksheet->setCellValue('G1', 'No IVA');
-        $activeWorksheet->setCellValue('H1', 'No grabada');
-        $activeWorksheet->setCellValue('I1', 'Grabada');
-        $activeWorksheet->setCellValue('J1', 'IVA');
-        $activeWorksheet->setCellValue('K1', 'Total');
-        $activeWorksheet->setCellValue('L1', 'Estado');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Identificación');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Cliente');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Comprobante');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Fecha');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Autorización');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'N° de comprobante');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'No IVA');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'No grabada');
+        if (!$after && $company->base5) {
+            $activeWorksheet->setCellValue($columns[$col++] . '1', 'Gra 5%');
+        }
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Gra ' . ($after ? '12%' : '15%'));
+        if (!$after && $company->base5) {
+            $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA 5%');
+        }
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA 12%');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Total');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Estado');
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
-            ->select('voucher_type', 'date', 'authorization', 'serie', 'no_iva', 'base0', 'base12', 'iva', 'total', 'orders.state', 'identication', 'name')
+            ->select('voucher_type', 'date', 'authorization', 'serie', 'no_iva', 'base0', 'base5', ($after ? 'base12' : 'base15'), 'iva5', ($after ? 'iva' : 'iva15'), 'total', 'orders.state', 'identication', 'name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->where('orders.branch_id', $branch->id)
@@ -411,18 +427,25 @@ class OrderController extends Controller
         $row = 2;
 
         foreach ($orders as $order) {
-            $activeWorksheet->getCell('A' . $row)->setValueExplicit($order->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $activeWorksheet->setCellValue('B' . $row, $order->name);
-            $activeWorksheet->setCellValue('C' . $row,  $this->vtconvertion($order->voucher_type));
-            $activeWorksheet->setCellValue('D' . $row, $order->date);
-            $activeWorksheet->getCell('E' . $row)->setValueExplicit($order->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $activeWorksheet->setCellValue('F' . $row, $order->serie);
-            $activeWorksheet->setCellValue('G' . $row, $order->no_iva);
-            $activeWorksheet->setCellValue('H' . $row, $order->base0);
-            $activeWorksheet->setCellValue('I' . $row, $order->base12);
-            $activeWorksheet->setCellValue('J' . $row, $order->iva);
-            $activeWorksheet->setCellValue('K' . $row, $order->total);
-            $activeWorksheet->setCellValue('L' . $row, $order->state);
+            $col = 0;
+            $activeWorksheet->getCell($columns[$col++] . $row)->setValueExplicit($order->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->name);
+            $activeWorksheet->setCellValue($columns[$col++]  . $row,  $this->vtconvertion($order->voucher_type));
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->date);
+            $activeWorksheet->getCell($columns[$col++]  . $row)->setValueExplicit($order->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->serie);
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->no_iva);
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->base0);
+            if (!$after && $company->base5) {
+                $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->base5);
+            }
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->{$after ? 'base12' : 'base15'});
+            if (!$after && $company->base5) {
+                $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->iva5);
+            }
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $after ? $order->iva : $order->iva15);
+            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->total);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->state);
             $row++;
         }
 
