@@ -35,19 +35,6 @@ class AtsController extends Controller
         $this->_($domtree, $xmlRoot, 'Anio', $year);
         $this->_($domtree, $xmlRoot, 'Mes', $month);
 
-        // $ventasEstablecimiento = Order::selectRaw('SUBSTRING(serie, 1, 3) AS asserie,SUM(base0) AS b0, SUM(base12) AS b12')
-        //     ->whereYear('date', $year)
-        //     ->whereMonth('date', $month)
-        //     ->where([
-        //         'branch_id' => $branch->id,
-        //         'state' => 'AUTORIZADO',
-        //     ])
-        //     ->groupBy('asserie')
-        //     ->orderBy('asserie', 'DESC')
-        //     ->get();
-
-        // $est = $ventasEstablecimiento->count() > 0 ? $ventasEstablecimiento->first()->asserie : '001';
-
         $this->_($domtree, $xmlRoot, 'numEstabRuc', '001');
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
@@ -63,7 +50,7 @@ class AtsController extends Controller
 
         $bases = 0;
         foreach ($orders as $order) {
-            $bases += $order->base0 + $order->base12;
+            $bases += $order->base0 + $order->base5 + $order->base12 + $order->base15;
         }
 
         $this->_($domtree, $xmlRoot, 'totalVentas', $bases);
@@ -143,10 +130,10 @@ class AtsController extends Controller
             $this->_($dom, $detalleCompras, 'autorizacion', $shop->authorization);
             $this->_($dom, $detalleCompras, 'baseNoGraIva', $shop->no_iva);
             $this->_($dom, $detalleCompras, 'baseImponible', $shop->base0);
-            $this->_($dom, $detalleCompras, 'baseImpGrav', $shop->base5 + $shop->base12 + $shop->base15);
+            $this->_($dom, $detalleCompras, 'baseImpGrav', number_format($shop->base5 + $shop->base12 + $shop->base15, 2, '.', ''));
             $this->_($dom, $detalleCompras, 'baseImpExe', 0);
             $this->_($dom, $detalleCompras, 'montoIce', $shop->ice);
-            $this->_($dom, $detalleCompras, 'montoIva', $shop->iva5 + $shop->iva + $shop->iva15);
+            $this->_($dom, $detalleCompras, 'montoIva', number_format($shop->iva5 + $shop->iva + $shop->iva15, 2, '.', ''));
 
             $this->_($dom, $detalleCompras, 'valRetBien10', $shop->r10 ?? 0);
             $this->_($dom, $detalleCompras, 'valRetServ20', $shop->r20 ?? 0);
@@ -229,7 +216,7 @@ class AtsController extends Controller
         foreach ($orders as $order) {
             $detalleVentas = $ventas->appendChild($dom->createElement("detalleVentas"));
 
-            $this->_($dom, $detalleVentas, 'tpIdCliente', $order->type_identification === 'ruc' ? '04' : '05');
+            $this->_($dom, $detalleVentas, 'tpIdCliente', $order->type_identification === 'ruc' ? '04' : ($order->type_identification === 'cédula' ? '05' : ($order->type_identification === 'cf' ? '07' : '06')));
             $this->_($dom, $detalleVentas, 'idCliente', $order->identication);
 
             if ($order->type_identification !== 'cf') {
@@ -246,8 +233,8 @@ class AtsController extends Controller
             $this->_($dom, $detalleVentas, 'numeroComprobantes', $order->numeroComprobantes);
             $this->_($dom, $detalleVentas, 'baseNoGraIva', 0);
             $this->_($dom, $detalleVentas, 'baseImponible', $order->base0);
-            $this->_($dom, $detalleVentas, 'baseImpGrav', $order->base12);
-            $this->_($dom, $detalleVentas, 'montoIva', $order->iva);
+            $this->_($dom, $detalleVentas, 'baseImpGrav', number_format($order->base5 + $order->base12 + $order->base15, 2, '.', ''));
+            $this->_($dom, $detalleVentas, 'montoIva', number_format($order->iva5 + $order->iva + $order->iva15, 2, '.', ''));
             $this->_($dom, $detalleVentas, 'montoIce', $order->ice);
             $this->_($dom, $detalleVentas, 'valorRetIva', 0);
             $this->_($dom, $detalleVentas, 'valorRetRenta', 0);
