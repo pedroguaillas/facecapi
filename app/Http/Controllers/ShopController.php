@@ -18,6 +18,7 @@ use App\StaticClasses\VoucherStates;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -371,26 +372,42 @@ class ShopController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
+        $after = false;
+        $dateToCheck = Carbon::parse($month . '-01');
+
+        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+            $after = true;
+        }
+
         $year = substr($month, 0, 4);
         $month = substr($month, 5, 2);
 
+        $columns = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N');
+        $col = 0;
+
         $spreadsheet = new Spreadsheet();
         $activeWorksheet = $spreadsheet->getActiveSheet();
-        $activeWorksheet->setCellValue('A1', 'Identificación');
-        $activeWorksheet->setCellValue('B1', 'Proveedor');
-        $activeWorksheet->setCellValue('C1', 'Comprobante');
-        $activeWorksheet->setCellValue('D1', 'Fecha');
-        $activeWorksheet->setCellValue('E1', 'Autorización');
-        $activeWorksheet->setCellValue('F1', 'N° de comprobante');
-        $activeWorksheet->setCellValue('G1', 'No IVA');
-        $activeWorksheet->setCellValue('H1', 'No grabada');
-        $activeWorksheet->setCellValue('I1', 'Grabada');
-        $activeWorksheet->setCellValue('J1', 'IVA');
-        $activeWorksheet->setCellValue('K1', 'Total');
-        $activeWorksheet->setCellValue('L1', 'Estado L/C');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Identificación');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Proveedor');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Comprobante');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Fecha');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Autorización');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'N° de comprobante');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'No IVA');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'No grabada');
+        if (!$after) {
+            $activeWorksheet->setCellValue($columns[$col++] . '1', 'Gra 5%');
+        }
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Gra ' . ($after ? '12%' : '15%'));
+        if (!$after) {
+            $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA 5%');
+        }
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA ' . ($after ? '12%' : '15%'));
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Total');
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'Estado L/C');
 
         $shops = Shop::join('providers AS p', 'p.id', 'provider_id')
-            ->select('voucher_type', 'date', 'authorization', 'serie', 'no_iva', 'base0', 'base12', 'iva', 'total', 'shops.state', 'p.identication', 'p.name')
+            ->select('voucher_type', 'date', 'authorization', 'serie', 'no_iva', 'base0', 'base5', ($after ? 'base12' : 'base15'), 'iva5', ($after ? 'iva' : 'iva15'), 'total', 'shops.state', 'p.identication', 'p.name')
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->where('shops.branch_id', $branch->id)
@@ -399,18 +416,25 @@ class ShopController extends Controller
         $row = 2;
 
         foreach ($shops as $shop) {
-            $activeWorksheet->getCell('A' . $row)->setValueExplicit($shop->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $activeWorksheet->setCellValue('B' . $row, $shop->name);
-            $activeWorksheet->setCellValue('C' . $row, $this->vtconvertion($shop->voucher_type));
-            $activeWorksheet->setCellValue('D' . $row, $shop->date);
-            $activeWorksheet->getCell('E' . $row)->setValueExplicit($shop->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $activeWorksheet->setCellValue('F' . $row, $shop->serie);
-            $activeWorksheet->setCellValue('G' . $row, $shop->no_iva);
-            $activeWorksheet->setCellValue('H' . $row, $shop->base0);
-            $activeWorksheet->setCellValue('I' . $row, $shop->base12);
-            $activeWorksheet->setCellValue('J' . $row, $shop->iva);
-            $activeWorksheet->setCellValue('K' . $row, $shop->total);
-            $activeWorksheet->setCellValue('L' . $row, $shop->state);
+            $col = 0;
+            $activeWorksheet->getCell($columns[$col++] . $row)->setValueExplicit($shop->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->name);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $this->vtconvertion($shop->voucher_type));
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->date);
+            $activeWorksheet->getCell($columns[$col++] . $row)->setValueExplicit($shop->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->serie);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->no_iva);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->base0);
+            if (!$after) {
+                $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->base5);
+            }
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->{$after ? 'base12' : 'base15'});
+            if (!$after) {
+                $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->iva5);
+            }
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->{$after ? 'iva' : 'iva15'});
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->total);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $shop->state);
             $row++;
         }
 
@@ -424,7 +448,7 @@ class ShopController extends Controller
             unlink($filename);
 
             return $content;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             exit($e->getMessage());
         }
 
