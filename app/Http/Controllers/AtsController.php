@@ -35,19 +35,6 @@ class AtsController extends Controller
         $this->_($domtree, $xmlRoot, 'Anio', $year);
         $this->_($domtree, $xmlRoot, 'Mes', $month);
 
-        // $ventasEstablecimiento = Order::selectRaw('SUBSTRING(serie, 1, 3) AS asserie,SUM(base0) AS b0, SUM(base12) AS b12')
-        //     ->whereYear('date', $year)
-        //     ->whereMonth('date', $month)
-        //     ->where([
-        //         'branch_id' => $branch->id,
-        //         'state' => 'AUTORIZADO',
-        //     ])
-        //     ->groupBy('asserie')
-        //     ->orderBy('asserie', 'DESC')
-        //     ->get();
-
-        // $est = $ventasEstablecimiento->count() > 0 ? $ventasEstablecimiento->first()->asserie : '001';
-
         $this->_($domtree, $xmlRoot, 'numEstabRuc', '001');
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
