@@ -413,7 +413,7 @@ class OrderController extends Controller
         if (!$after && $company->base5) {
             $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA 5%');
         }
-        $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA 12%');
+        $activeWorksheet->setCellValue($columns[$col++] . '1',  'IVA ' . ($after ? ' 12%' : ' 15%'));
         $activeWorksheet->setCellValue($columns[$col++] . '1', 'Total');
         $activeWorksheet->setCellValue($columns[$col++] . '1', 'Estado');
 
