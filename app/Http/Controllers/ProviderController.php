@@ -101,19 +101,33 @@ class ProviderController extends Controller
             }
         } else {
             // Si no existe registros en el sistema consultar en la API
-            $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatosSri/RucSri', [
-                'Ruc' => $identification,
-                'Apikey' => env('END_POINT_API_Key'),
+
+            // $response = Http::get('http://nessoftfact-001-site6.atempurl.com/api/ConsultasDatosSri/RucSri', [
+            //     'Ruc' => $identification,
+            //     'Apikey' => env('END_POINT_API_Key'),
+            // ]);
+
+            // if ($response['razonSocial'] === null) {
+            //     return;
+            // } {
+            //     // Ajustar la respuesta
+            //     $result = [
+            //         'branch_id' => 0,
+            //         'name' => $response['razonSocial'],
+            //         'address' => $response['establecimientos'][0]['direccionCompleta'],
+            //     ];
+            // }
+            $response = Http::get('https://srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/Persona/obtenerPorTipoIdentificacion', [
+                'numeroIdentificacion' => $identification,
+                'tipoIdentificacion' => 'R'
             ]);
 
-            if ($response['razonSocial'] === null) {
-                return;
-            } {
+            if ($response->getStatusCode() === 200) {
                 // Ajustar la respuesta
                 $result = [
                     'branch_id' => 0,
-                    'name' => $response['razonSocial'],
-                    'address' => $response['establecimientos'][0]['direccionCompleta'],
+                    'name' => trim($response['nombreCompleto']),
+                    'address' => null,
                 ];
             }
         }
