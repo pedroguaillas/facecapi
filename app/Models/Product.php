@@ -8,13 +8,14 @@ class Product extends Model
 {
     protected $casts = [
         'price1' => 'float',
+        'tourism' => 'boolean',
     ];
 
     protected $fillable = [
         'branch_id', 'category_id', 'code', 'type_product', 'name',
         'unity_id', 'price1', 'price2', 'price3', 'iva', 'ice', 'irbpnr',
         'entry_account_id', 'active_account_id', 'inventory_account_id',
-        'stock'
+        'stock', 'tourism',
     ];
 
     public function branch()

@@ -7,6 +7,12 @@
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->base5, 2) }}</td>
             </tr>
             @endif
+            @if($movement->base8 > 0)
+            <tr>
+                <td class="relleno">SUBTOTAL 8%</td>
+                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->base8, 2) }}</td>
+            </tr>
+            @endif
             @if(!$after)
             <tr>
                 <td style=" width:160px;" class="relleno">SUBTOTAL 15%</td>
@@ -42,6 +48,12 @@
             <tr>
                 <td class="relleno">IVA 5%</td>
                 <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva5, 2) }}</td>
+            </tr>
+            @endif
+            @if($movement->iva8 > 0)
+            <tr>
+                <td class="relleno">IVA 8%</td>
+                <td style="padding-right: .5em; text-align: right;">{{ number_format($movement->iva8, 2) }}</td>
             </tr>
             @endif
             @if(!$after)

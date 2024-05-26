@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Company extends Model
 {
+    protected $casts = [
+        'base8' => 'boolean',
+        'tourism_from' => 'date',
+        'tourism_to' => 'date',
+    ];
+
     protected $fillable = [
         'ruc', 'company', 'economic_activity',
         'accounting', 'micro_business', 'retention_agent',
@@ -15,6 +21,11 @@ class Company extends Model
 
         // Ajuste base5 solo para ferreterias
         'base5',
+
+        // Ajuste base8 solo para turistas
+        'base8',
+        'tourism_from',
+        'tourism_to',
 
         //Agregado las 2 columas el 25 de enero del 2022
         'rimpe', 'inventory',

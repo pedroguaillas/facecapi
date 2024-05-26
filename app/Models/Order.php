@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
+    protected $casts = [
+        'base8' => 'float',
+        'iva8' => 'float',
+    ];
+
     protected $fillable = [
         'branch_id', 'date',
         'description', 'sub_total',
@@ -30,7 +35,7 @@ class Order extends Model
         // Nota de Credito
         'date_order', 'serie_order', 'reason',
         // Cambio del % IVA
-        'base5', 'base15', 'iva5', 'iva15'
+        'base5', 'base8', 'base15', 'iva5', 'iva8', 'iva15',
     ];
 
     public function orderitems()
