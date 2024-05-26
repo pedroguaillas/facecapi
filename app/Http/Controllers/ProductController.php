@@ -41,7 +41,7 @@ class ProductController extends Controller
                 return $query->where('products.code', 'LIKE', "%$search%")
                     ->orWhere('products.name', 'LIKE', "%$search%");
             })
-            ->selectRaw('products.id,products.code,products.type_product,products.name,products.price1,iva_taxes.code AS iva_code,percentage,products.ice,products.stock,categories.category,unities.unity')
+            ->selectRaw('products.id,products.code,products.type_product,products.name,products.price1,iva_taxes.code AS iva_code,percentage,products.ice,products.stock,tourism,categories.category,unities.unity')
             ->orderBy('products.created_at', 'DESC');
 
         return ProductResources::collection($products->paginate($paginate));

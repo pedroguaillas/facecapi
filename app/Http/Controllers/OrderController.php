@@ -62,10 +62,21 @@ class OrderController extends Controller
             ->where('company_id', $company->id)
             ->get();
 
+        // Turistas que tienen que facturar con el 8%
+        $tourism = false;
+        $now = Carbon::now();
+
+        if ($company->base8 && $company->tourism_from !== null && $company->tourism_to !== null) {
+            if ($now->isAfter($company->tourism_from) && $now->isBefore($company->tourism_to)) {
+                $tourism = true;
+            }
+        }
+
         return response()->json([
             'points' => $points,
             'methodOfPayments' => MethodOfPayment::all(),
-            'pay_method' => $company->pay_method
+            'pay_method' => $company->pay_method,
+            'tourism' => $tourism,
         ]);
     }
 
