@@ -10,6 +10,7 @@ class Company extends Model
         'base8' => 'boolean',
         'tourism_from' => 'date',
         'tourism_to' => 'date',
+        'inventory' => 'boolean',
     ];
 
     protected $fillable = [

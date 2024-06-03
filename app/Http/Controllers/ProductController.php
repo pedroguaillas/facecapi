@@ -109,23 +109,28 @@ class ProductController extends Controller
                 'code' => $product['code'],
                 'type_product' => $product['type_product'],
                 'name' => $product['name'],
-                'unity_id' => strlen($product['unity_id']) ? $product['unity_id'] : null,
                 'price1' => $product['price1'],
-                'price2' => strlen($product['price2']) ? $product['price2'] : null,
-                'price3' => strlen($product['price3']) ? $product['price3'] : null,
-                'iva' => $product['iva']
+                'iva' => $product['iva'],
+                'stock' => $product['stock'],
             ]);
         }
         $product = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first()
             ->products()->createMany($newProducts);
 
-        $products = Product::leftJoin('categories', 'categories.id', 'products.category_id')
-            ->leftJoin('unities', 'unities.id', 'products.unity_id')
-            ->where('products.branch_id', $branch->id)
-            ->select('products.*', 'categories.category', 'unities.unity');
+        // $products = Product::leftJoin('categories', 'categories.id', 'products.category_id')
+        //     ->leftJoin('unities', 'unities.id', 'products.unity_id')
+        //     ->where('products.branch_id', $branch->id)
+        //     ->select('products.*', 'categories.category', 'unities.unity');
 
-        return ProductResources::collection($products->latest()->paginate());
+        $products = Product::join('iva_taxes', 'iva_taxes.code', 'products.iva')
+            ->leftJoin('categories', 'categories.id', 'category_id')
+            ->leftJoin('unities', 'unities.id', 'unity_id')
+            ->where('products.branch_id', $branch->id)
+            ->selectRaw('products.id,products.code,products.type_product,products.name,products.price1,iva_taxes.code AS iva_code,percentage,products.ice,products.stock,tourism,categories.category,unities.unity')
+            ->orderBy('products.created_at', 'DESC');
+
+        return ProductResources::collection($products->paginate());
     }
 
     public function getmasive(Request $request)

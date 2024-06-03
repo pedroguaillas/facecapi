@@ -22,7 +22,7 @@ class InventoryController extends Controller
         if ($inventory) {
             $product = $inventory->product;
             $product->stock === null ? 0 : $product->stock;
-            if ($request->typ === 'Inventario inicial' || $request->type === 'Compra' || $request->type === 'Devolución en venta') {
+            if ($request->type === 'Inventario inicial' || $request->type === 'Compra' || $request->type === 'Devolución en venta') {
                 $product->stock += $request->quantity;
             } else {
                 $product->stock -= $request->quantity;
