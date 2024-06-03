@@ -81,7 +81,7 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => 3600,
             'user' => $auth,
-            'inventory' => $company->inventory === 1,
+            'inventory' => $company->inventory,
             'decimal' => $company->decimal
         ]);
     }
