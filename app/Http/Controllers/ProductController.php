@@ -62,7 +62,7 @@ class ProductController extends Controller
 
         return response()->json([
             'ivaTaxes' => $taxes->get(),
-            'iceCataloges' => IceCataloge::all(),
+            'iceCataloges' => $company->ice ? IceCataloge::all() : [],
         ]);
     }
 
@@ -117,11 +117,6 @@ class ProductController extends Controller
         $product = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first()
             ->products()->createMany($newProducts);
-
-        // $products = Product::leftJoin('categories', 'categories.id', 'products.category_id')
-        //     ->leftJoin('unities', 'unities.id', 'products.unity_id')
-        //     ->where('products.branch_id', $branch->id)
-        //     ->select('products.*', 'categories.category', 'unities.unity');
 
         $products = Product::join('iva_taxes', 'iva_taxes.code', 'products.iva')
             ->leftJoin('categories', 'categories.id', 'category_id')
@@ -208,7 +203,7 @@ class ProductController extends Controller
         return response()->json([
             'product' => Product::find($id),
             'ivaTaxes' => $taxes->get(),
-            'iceCataloges' => IceCataloge::all(),
+            'iceCataloges' => $company->ice ? IceCataloge::all() : [],
         ]);
     }
 
