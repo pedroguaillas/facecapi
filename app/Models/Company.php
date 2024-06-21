@@ -11,6 +11,7 @@ class Company extends Model
         'tourism_from' => 'date',
         'tourism_to' => 'date',
         'inventory' => 'boolean',
+        'ice' => 'boolean',
     ];
 
     protected $fillable = [
@@ -27,6 +28,9 @@ class Company extends Model
         'base8',
         'tourism_from',
         'tourism_to',
+
+        // Ajuste ICE
+        'ice',
 
         //Agregado las 2 columas el 25 de enero del 2022
         'rimpe', 'inventory',
