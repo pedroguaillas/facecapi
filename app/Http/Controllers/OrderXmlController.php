@@ -270,13 +270,21 @@ class OrderXmlController extends Controller
 
         // Aplied only tax to IVA, NOT aplied to IRBPNR % Imp. al Cons Esp, require add
         $string .= '<totalConImpuestos>';
+
+        $aditionalDiscount = $order->discount;
+        foreach ($order_items as $oi) {
+            $aditionalDiscount -= $oi->discount;
+        }
+
         foreach ($this->grupingTaxes($order_items) as $tax) {
             $string .= "<totalImpuesto>";
             $string .= "<codigo>$tax->code</codigo>";    // 2 IVA - 3 ICE
             $string .= "<codigoPorcentaje>$tax->percentageCode</codigoPorcentaje>";
+            $string .= $tax->code === 2 && $aditionalDiscount ? "<descuentoAdicional>" . round($aditionalDiscount, 2) . "</descuentoAdicional>" : null;
             $string .= "<baseImponible>" . number_format($tax->base, 2, '.', '') . "</baseImponible>";
             // Solo en caso del impuesto al IVA poner la <tarifa>
             $string .= $tax->code === 2 ? "<tarifa>$tax->percentage</tarifa>" : null;
+            // Impuesto adicional
             // El valor varia en dependecia del impuesto
             $string .= "<valor>" . ($tax->code === 2 ? round($tax->base * $tax->percentage / 100, 2) : $order->ice) . "</valor>";
             // $string .= "<valor>" . ($tax->code === 2 ? ($tax->percentageCode === 0 || $tax->percentageCode === 6 ? 0 : $order->iva) : $order->ice) . "</valor>";
