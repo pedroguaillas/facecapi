@@ -37,7 +37,7 @@ class OrderController extends Controller
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
             ->select('orders.*', 'c.name', 'c.email')
-            ->orderBy('orders.created_at', 'DESC')
+            ->orderBy('orders.id', 'DESC')
             ->where('orders.branch_id', $branch->id)
             ->where(function ($query) use ($search) {
                 return $query->where('orders.serie', 'LIKE', "%$search%")
@@ -161,6 +161,7 @@ class OrderController extends Controller
 
             if ($request->get('send')) {
                 (new OrderXmlController())->xml($order->id);
+                (new WSSriOrderController())->send($order->id);
             }
         }
     }

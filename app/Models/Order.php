@@ -36,6 +36,8 @@ class Order extends Model
         'date_order', 'serie_order', 'reason',
         // Cambio del % IVA
         'base5', 'base8', 'base15', 'iva5', 'iva8', 'iva15',
+        // Envio por lotes
+        'lot_id',
     ];
 
     public function orderitems()

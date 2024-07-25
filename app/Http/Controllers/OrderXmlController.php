@@ -104,8 +104,9 @@ class OrderXmlController extends Controller
             if (file_exists(Storage::path($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED . DIRECTORY_SEPARATOR . $file))) {
                 $order->xml = $rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED . DIRECTORY_SEPARATOR . $file;
                 $order->state = VoucherStates::SIGNED;
+                // Elimina el archivo que esta solo creado
+                Storage::delete($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SAVED . DIRECTORY_SEPARATOR . $file);
                 $order->save();
-                (new WSSriOrderController())->send($order->id);
             }
         }
     }

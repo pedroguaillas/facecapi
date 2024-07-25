@@ -95,6 +95,7 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->post('orderlist', 'OrderController@orderlist');
     $router->get('orders/create', 'OrderController@create');
     $router->post('orders', 'OrderController@store');
+    $router->post('orders/lot', 'OrderLotController@store');
     $router->get('orders/{id}', 'OrderController@show');
     $router->get('orders/{search}/search', 'OrderController@search');
     $router->put('orders/{id}', 'OrderController@update');
