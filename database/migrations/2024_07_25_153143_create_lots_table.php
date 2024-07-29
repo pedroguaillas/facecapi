@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('authorization', 49);
             $table->timestamp('authorized_at')->nullable();
             $table->char('state', 15)->nullable();
+            $table->string('extra_detail')->nullable();
             $table->timestamps();
 
             $table->foreign('emision_point_id')->references('id')->on('emision_points');

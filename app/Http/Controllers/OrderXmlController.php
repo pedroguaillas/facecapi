@@ -6,6 +6,7 @@ use App\Models\Branch;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Company;
+use App\Models\Lot;
 use App\Models\Order;
 use App\Models\OrderAditional;
 use App\Models\OrderItem;
@@ -465,6 +466,43 @@ class OrderXmlController extends Controller
         $string .= '</infoTributaria>';
 
         return $string;
+    }
+
+    public function createLot($idLote)
+    {
+        $dom = new \DOMDocument('1.0', 'ISO-8859-1');
+
+        $autorizacion = $dom->createElement('lote');
+        $autorizacion->setAttribute('version', '1.0.0');
+        $dom->appendChild($autorizacion);
+
+        $lot = Lot::find($idLote);
+        $estado = $dom->createElement('claveAcceso', $lot->authorization);
+        $autorizacion->appendChild($estado);
+        $orders = Order::where('lot_id', $idLote)->get();
+
+        $ruc = substr($lot->authorization, 10, 13);
+        $auth = $dom->createElement('ruc', $ruc);
+        $autorizacion->appendChild($auth);
+
+        $elementocomprobantes = $dom->createElement('comprobantes');
+        $autorizacion->appendChild($elementocomprobantes);
+
+        // Formar el xml por lote
+        foreach ($orders as $order) {
+
+            $elementocomprobante = $dom->createElement('comprobante');
+            $elementocomprobantes->appendChild($elementocomprobante);
+
+            // Use createCDATASection() function to create a new cdata node
+            $domElement = $dom->createCDATASection(Storage::get($order->xml));
+
+            // Append element in the document 
+            $elementocomprobante->appendChild($domElement);
+        }
+
+        $path = 'xmls' . DIRECTORY_SEPARATOR . $ruc . DIRECTORY_SEPARATOR . $lot->authorization . '.xml';
+        Storage::put($path, $dom->saveXML());
     }
 
     public function generaDigitoModulo11($cadena)

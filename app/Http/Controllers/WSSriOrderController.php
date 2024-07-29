@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Lot;
 use App\StaticClasses\VoucherStates;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Order;
@@ -40,13 +41,11 @@ class WSSriOrderController
                 return;
             }
 
-            // $this->moveXmlFile($order, VoucherStates::SENDED);
             $order->state = VoucherStates::SENDED;
             $order->save();
 
             switch ($result->RespuestaRecepcionComprobante->estado) {
                 case VoucherStates::RECEIVED:
-                    // $this->moveXmlFile($order, VoucherStates::RECEIVED);
                     $order->state = VoucherStates::RECEIVED;
                     $order->save();
                     $this->authorize($id);
@@ -61,7 +60,6 @@ class WSSriOrderController
                     }
 
                     $order->extra_detail = substr($message, 0, 255);
-                    // $this->moveXmlFile($order, VoucherStates::RETURNED);
                     $order->state = VoucherStates::RETURNED;
                     $order->save();
                     break;
@@ -70,10 +68,11 @@ class WSSriOrderController
             info(' CODE: ' . $e->getCode());
         }
     }
+
     public function sendLote($idLote)
     {
-        $orders = Order::where('lote', $idLote)->get();
-        $environment = substr($orders[0]->xml, -30, 1);
+        $lot = Lot::find($idLote);
+        $environment = 1;
 
         switch ((int) $environment) {
             case 1:
@@ -84,83 +83,50 @@ class WSSriOrderController
                 break;
         }
 
-        $dom = new \DOMDocument('1.0', 'ISO-8859-1');
+        $options = array(
+            'connection_timeout' => 3,
+            // 'cache_wsdl' => WSDL_CACHE_NONE
+        );
 
-        $autorizacion = $dom->createElement('lote');
-        $dom->appendChild($autorizacion);
+        $soapClientReceipt = new \SoapClient($wsdlReceipt, $options);
+        $paramenters = new \stdClass();
+        $paramenters->xml = Storage::get('xmls' . DIRECTORY_SEPARATOR . $lot->authorization . '.xml');
 
-        $estado = $dom->createElement('claveAcceso', 'clave');
-        $autorizacion->appendChild($estado);
+        try {
+            $result = new \stdClass();
+            $result = $soapClientReceipt->validarComprobante($paramenters);
 
-        $ruc=substr($orders[0]->xml, 12, 13);
-        $auth = $dom->createElement('ruc', $ruc);
-        $autorizacion->appendChild($auth);
+            // Verificar si la peticion llego al SRI sino abandonar el proceso
+            if (!property_exists($result, 'RespuestaRecepcionComprobante')) {
+                return;
+            }
 
-        $elementocomprobantes = $dom->createElement('comprobantes');
-        $autorizacion->appendChild($elementocomprobantes);
+            $lot->state = VoucherStates::SENDED;
+            $lot->save();
 
-        // Formar el xml por lote
-        foreach ($orders as $order) {
+            switch ($result->RespuestaRecepcionComprobante->estado) {
+                case VoucherStates::RECEIVED:
+                    $lot->state = VoucherStates::RECEIVED;
+                    $lot->save();
+                    // $this->authorize($id);
+                    break;
+                case VoucherStates::RETURNED:
+                    $mensajes = $result->RespuestaRecepcionComprobante->comprobantes->comprobante->mensajes;
+                    $mensajes = json_decode(json_encode($mensajes), true);
 
-            $elementocomprobante = $dom->createElement('comprobante');
-            $elementocomprobantes->appendChild($elementocomprobante);
+                    $message = $mensajes['mensaje']['mensaje'] . '.';
+                    if (array_key_exists('informacionAdicional', $mensajes['mensaje'])) {
+                        $message .= ' informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
+                    }
 
-            // Use createCDATASection() function to create a new cdata node
-            $domElement = $dom->createCDATASection(Storage::get($order->xml));
-
-            // Append element in the document 
-            $elementocomprobante->appendChild($domElement);
+                    $lot->extra_detail = substr($message, 0, 255);
+                    $lot->state = VoucherStates::RETURNED;
+                    $lot->save();
+                    break;
+            }
+        } catch (\Exception $e) {
+            info(' CODE: ' . $e->getCode());
         }
-        $path='xml'.DIRECTORY_SEPARATOR.$ruc. DIRECTORY_SEPARATOR.$clave.'.xm';
-        Storage::put($path, $dom->saveXML());
-
-        // $options = array(
-        //     'connection_timeout' => 3,
-        //     // 'cache_wsdl' => WSDL_CACHE_NONE
-        // );
-
-        // $soapClientReceipt = new \SoapClient($wsdlReceipt, $options);
-        // $paramenters = new \stdClass();
-        // $paramenters->xml = Storage::get($order->xml);
-
-        // try {
-        //     $result = new \stdClass();
-        //     $result = $soapClientReceipt->validarComprobante($paramenters);
-
-        //     // Verificar si la peticion llego al SRI sino abandonar el proceso
-        //     if (!property_exists($result, 'RespuestaRecepcionComprobante')) {
-        //         return;
-        //     }
-
-        //     // $this->moveXmlFile($order, VoucherStates::SENDED);
-        //     $order->state = VoucherStates::SENDED;
-        //     $order->save();
-
-        //     switch ($result->RespuestaRecepcionComprobante->estado) {
-        //         case VoucherStates::RECEIVED:
-        //             // $this->moveXmlFile($order, VoucherStates::RECEIVED);
-        //             $order->state = VoucherStates::RECEIVED;
-        //             $order->save();
-        //             $this->authorize($id);
-        //             break;
-        //         case VoucherStates::RETURNED:
-        //             $mensajes = $result->RespuestaRecepcionComprobante->comprobantes->comprobante->mensajes;
-        //             $mensajes = json_decode(json_encode($mensajes), true);
-
-        //             $message = $mensajes['mensaje']['mensaje'] . '.';
-        //             if (array_key_exists('informacionAdicional', $mensajes['mensaje'])) {
-        //                 $message .= ' informacionAdicional : ' . $mensajes['mensaje']['informacionAdicional'];
-        //             }
-
-        //             $order->extra_detail = substr($message, 0, 255);
-        //             // $this->moveXmlFile($order, VoucherStates::RETURNED);
-        //             $order->state = VoucherStates::RETURNED;
-        //             $order->save();
-        //             break;
-        //     }
-        // } catch (\Exception $e) {
-        //     info(' CODE: ' . $e->getCode());
-        // }
     }
 
     public function authorize($id)

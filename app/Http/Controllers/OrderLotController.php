@@ -75,13 +75,13 @@ class OrderLotController extends Controller
         $serie = str_pad($branch->store, 3, '0', STR_PAD_LEFT) . '-' . str_pad($emisionPoint->point, 3, '0', STR_PAD_LEFT) . '-' . str_pad($emisionPoint->lot, 9, '0', STR_PAD_LEFT);
         $date = Carbon::now();
         $authorization = $date->format('dmY') . '01' .
-            $company->ruc . $company->enviroment_type . $serie
+            $company->ruc . $company->enviroment_type . str_replace('-', '', $serie)
             . '123456781';
 
         $lot = Lot::create([
-            'emision_point_id' => $branch->point,
-            'serie' => str_replace('-', '', $serie),
-            'authorization' => $authorization . (new OrderXmlController())->generaDigitoModulo11($authorization),
+            'emision_point_id' => $emisionPoint->point,
+            'serie' => $serie,
+            'authorization' => '' . $authorization . (new OrderXmlController())->generaDigitoModulo11($authorization),
             'state' => VoucherStates::SAVED,
         ]);
 
@@ -143,9 +143,12 @@ class OrderLotController extends Controller
         }
 
         // Firmar
-        // foreach ($orders as $item) {
-        //     (new OrderXmlController())->xml($item->id);
-        // }
+        $orderXmlController = new OrderXmlController();
+        foreach ($orders as $item) {
+            $orderXmlController->xml($item->id);
+        }
+        $orderXmlController->createLot($lot->id);
+        (new WSSriOrderController())->sendLote($lot->id);
 
         return response()->json(['data' => $orders, 'orderItems' => $orderItems]);
     }
