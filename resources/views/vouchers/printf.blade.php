@@ -82,14 +82,16 @@
                 <td style="text-align: right;">{{ number_format($movement->base12, 2) }}</td>
             </tr>
             @endif
+            @if($movement->base0 > 0)
             <tr>
                 <td>SUBTOTAL 0%</td>
                 <td style="text-align: right;">{{ number_format($movement->base0, 2) }}</td>
             </tr>
+            @endif
             <tr>
                 <td>SUBTOTAL SIN IMPUESTOS</td>
                 <td style="text-align: right;">{{
-                    number_format($movement->base12 + $movement->base0 + $movement->no_iva, 2)
+                    number_format($movement->no_iva + $movement->base0 + $movement->base5 + $movement->base8 + $movement->base15, 2)
                 }}</td>
             </tr>
             @if(!$after)

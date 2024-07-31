@@ -280,7 +280,7 @@ class OrderController extends Controller
         $company = Company::find($level->level_id);
 
         $pdf = PDF::loadView('vouchers/printf', compact('movement', 'company', 'movement_items', 'after'));
-        $pdf->setPaper(array(0, 0, (8 / 2.54) * 72, (10 / 2.54) * 72), 'portrait');
+        $pdf->setPaper(array(0, 0, (8 / 2.54) * 72, (($movement_items->count() > 3 ? 12 : 10) / 2.54) * 72), 'portrait');
 
         return $pdf->stream();
     }
