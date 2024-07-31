@@ -44,7 +44,7 @@ class OrderXmlController extends Controller
 
         $order_items = OrderItem::join('products AS p', 'p.id', 'product_id')
             ->join('iva_taxes AS it', 'it.code', 'order_items.iva')
-            ->selectRaw('quantity,price,discount,order_items.ice AS valice,p.code AS codeproduct,name,it.code AS iva,it.percentage,p.ice AS codice')
+            ->selectRaw('quantity,price,discount,order_items.ice AS valice,p.code AS codeproduct,aux_cod,name,it.code AS iva,it.percentage,p.ice AS codice')
             ->where('order_id', $id)
             ->get();
 
@@ -64,7 +64,8 @@ class OrderXmlController extends Controller
 
     private function sign($company, $order, $str_xml_voucher)
     {
-        $file = substr($str_xml_voucher, strpos($str_xml_voucher, '<claveAcceso>') + 13, 49) . '.xml';
+        $order->authorization = substr($str_xml_voucher, strpos($str_xml_voucher, '<claveAcceso>') + 13, 49);
+        $file =  $order->authorization . '.xml';
         $date = new \DateTime($order->date);
 
         $rootfile = 'xmls' . DIRECTORY_SEPARATOR . $company->ruc . DIRECTORY_SEPARATOR .
@@ -99,13 +100,13 @@ class OrderXmlController extends Controller
             // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
             $java_firma = "java -jar $public_path/public/Firma/dist/Firma.jar $cert " . $company->pass_cert . " $newrootfile/CREADO/$file $newrootfile/FIRMADO $file";
 
-            $variable = system($java_firma);
+            system($java_firma);
 
             // Si se creo el archivo FIRMADO entonces guardar estado FIRMADO Y el nuevo path XML
             if (file_exists(Storage::path($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED . DIRECTORY_SEPARATOR . $file))) {
                 $order->xml = $rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED . DIRECTORY_SEPARATOR . $file;
                 $order->state = VoucherStates::SIGNED;
-                // Elimina el archivo que esta solo creado
+                // Elimina el archivo CREADO
                 Storage::delete($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SAVED . DIRECTORY_SEPARATOR . $file);
                 $order->save();
             }
@@ -317,7 +318,7 @@ class OrderXmlController extends Controller
 
             $string .= "<codigoPrincipal>" . $detail->codeproduct . "</codigoPrincipal>";
             // El codigo aux obligatorio por el IVA 5%
-            $string .= "<codigoAuxiliar>" . $detail->codeproduct . "</codigoAuxiliar>";
+            $string .= $detail->iva === 5 ? "<codigoAuxiliar>" . $detail->aux_cod . "</codigoAuxiliar>" : null;
             $string .= "<descripcion>" . $detail->name . "</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
@@ -470,7 +471,7 @@ class OrderXmlController extends Controller
 
     public function createLot($idLote)
     {
-        $dom = new \DOMDocument('1.0', 'ISO-8859-1');
+        $dom = new \DOMDocument('1.0', 'UTF-8');
 
         $autorizacion = $dom->createElement('lote');
         $autorizacion->setAttribute('version', '1.0.0');

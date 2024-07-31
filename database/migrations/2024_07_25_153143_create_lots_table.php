@@ -20,7 +20,6 @@ return new class extends Migration
             $table->unsignedBigInteger('emision_point_id');
             $table->string('serie', 17);
             $table->string('authorization', 49);
-            $table->timestamp('authorized_at')->nullable();
             $table->char('state', 15)->nullable();
             $table->string('extra_detail')->nullable();
             $table->timestamps();
@@ -32,6 +31,10 @@ return new class extends Migration
             $table->unsignedBigInteger('lot_id')->after('serie')->nullable();
 
             $table->foreign('lot_id')->references('id')->on('lots');
+        });
+
+        Schema::table('products', function (Blueprint $table) {
+            $table->string('aux_cod', 25)->after('code')->nullable();
         });
     }
 

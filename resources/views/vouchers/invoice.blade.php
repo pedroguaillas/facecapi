@@ -29,7 +29,7 @@
         <table style="width: 100%; border-radius: 10px; margin-top: .5em;" class="table-collapse">
             <tbody>
                 <tr>
-                    <th style="width: 5em;">Cod. Principal</th>
+                    <th style="width: 5em;">Código</th>
                     <th style="width: 4em;">Cant.</th>
                     <th>Descripción</th>
                     <th style="width: 5em;">Precio Unitario</th>
@@ -47,7 +47,7 @@
         <table style="width: 100%;" class="table-collapse">
             <tbody>
                 <tr>
-                    <td style="text-align: center; width: 5em;">{{ $item->code }}</td>
+                    <td style="text-align: center; width: 5em;">{{ $item->iva == 5 ? $item->aux_cod : $item->code }}</td>
                     <td style="text-align: center; width: 4em;">{{ floatval($item->quantity) }}</td>
                     <td>{{ $item->name }}</td>
                     <td style="text-align: right; width: 5em;">{{ number_format($item->price, $company->decimal) }}</td>

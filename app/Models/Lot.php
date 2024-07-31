@@ -8,7 +8,6 @@ class Lot extends Model
 {
     protected $fillable = [
         'emision_point_id', 'serie',
-        'authorization', 'authorized_at',
-        'state'
+        'authorization', 'state'
     ];
 }

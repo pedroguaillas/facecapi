@@ -70,7 +70,7 @@ class OrderLotController extends Controller
         $products = json_decode(json_encode($products));
 
         // Actualizar secuencia del comprobante
-        $emisionPoint = EmisionPoint::find($request->point_id);
+        $emisionPoint = EmisionPoint::where('branch_id', $branch->id)->first();
 
         $serie = str_pad($branch->store, 3, '0', STR_PAD_LEFT) . '-' . str_pad($emisionPoint->point, 3, '0', STR_PAD_LEFT) . '-' . str_pad($emisionPoint->lot, 9, '0', STR_PAD_LEFT);
         $date = Carbon::now();
@@ -84,11 +84,10 @@ class OrderLotController extends Controller
             'authorization' => '' . $authorization . (new OrderXmlController())->generaDigitoModulo11($authorization),
             'state' => VoucherStates::SAVED,
         ]);
-
+        $date = $date->toDateString();
         $emisionPoint->lot++;
         $emisionPoint->save();
 
-        $date = $date->toDateString();
         $length = count($excelData);
         $orders = [];
         $orderItems = [];
@@ -147,10 +146,12 @@ class OrderLotController extends Controller
         foreach ($orders as $item) {
             $orderXmlController->xml($item->id);
         }
-        $orderXmlController->createLot($lot->id);
-        (new WSSriOrderController())->sendLote($lot->id);
 
-        return response()->json(['data' => $orders, 'orderItems' => $orderItems]);
+        // Crea Lote
+        $orderXmlController->createLot($lot->id);
+
+        //Envia Lote
+        (new WSSriOrderController())->sendLote($lot->id);
     }
 
     private function getData(Request $request)
