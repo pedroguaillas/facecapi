@@ -16,6 +16,8 @@ class Product extends Model
         'unity_id', 'price1', 'price2', 'price3', 'iva', 'ice', 'irbpnr',
         'entry_account_id', 'active_account_id', 'inventory_account_id',
         'stock', 'tourism',
+        // Obligatorio productos con el IVA 5%
+        'aux_cod',
     ];
 
     public function branch()
