@@ -191,14 +191,21 @@ class ShopController extends Controller
     // Solo liquidacion en compra
     public function showPdf($id)
     {
-        $movement = Shop::join('providers AS p', 'shops.provider_id', 'p.id')
-            ->select('shops.*', 'p.*')
+        $movement = Shop::join('providers AS p', 'provider_id', 'p.id')
+            ->select('shops.*', 'p.identication', 'p.name', 'p.address')
             ->where('shops.id', $id)
             ->first();
 
-        $movement_items = ShopItem::join('products', 'products.id', 'shop_items.product_id')
+        $after = false;
+        $dateToCheck = Carbon::parse($movement->date);
+
+        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+            $after = true;
+        }
+
+        $movement_items = ShopItem::join('products', 'products.id', 'product_id')
             ->select('products.*', 'shop_items.*')
-            ->where('shop_items.shop_id', $id)
+            ->where('shop_id', $id)
             ->get();
 
         $auth = Auth::user();
@@ -217,7 +224,7 @@ class ShopController extends Controller
             $branch = $branch->first();
         }
 
-        $pdf = PDF::loadView('vouchers/settlementonpurchase', compact('movement', 'branch', 'company', 'movement_items'));
+        $pdf = PDF::loadView('vouchers/settlementonpurchase', compact('movement', 'branch', 'company', 'movement_items', 'after'));
 
         return $pdf->stream();
     }
