@@ -156,7 +156,7 @@ class OrderController extends Controller
 
             // Actualizar secuencia del comprobante
             $emisionPoint = EmisionPoint::find($request->point_id);
-            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'} = (int)substr($request->serie, 8) + 1;
+            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'} = (int) substr($request->serie, 8) + 1;
             $emisionPoint->save();
 
             if ($request->get('send')) {
@@ -213,7 +213,7 @@ class OrderController extends Controller
             ->first();
 
         $after = false;
-        $dateToCheck = Carbon::parse($movement->date);
+        $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
 
         if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
             $after = true;
@@ -232,7 +232,7 @@ class OrderController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 0, 3),
+            'store' => (int) substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {
@@ -312,7 +312,7 @@ class OrderController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 0, 3),
+            'store' => (int) substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {
@@ -339,7 +339,8 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
 
-        if ($order->state === VoucherStates::AUTHORIZED) return;
+        if ($order->state === VoucherStates::AUTHORIZED)
+            return;
 
         if ($order->update($request->except(['id', 'products', 'send', 'aditionals']))) {
 
@@ -425,7 +426,7 @@ class OrderController extends Controller
         if (!$after && $company->base5) {
             $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA 5%');
         }
-        $activeWorksheet->setCellValue($columns[$col++] . '1',  'IVA ' . ($after ? ' 12%' : ' 15%'));
+        $activeWorksheet->setCellValue($columns[$col++] . '1', 'IVA ' . ($after ? ' 12%' : ' 15%'));
         $activeWorksheet->setCellValue($columns[$col++] . '1', 'Total');
         $activeWorksheet->setCellValue($columns[$col++] . '1', 'Estado');
 
@@ -442,21 +443,21 @@ class OrderController extends Controller
             $col = 0;
             $activeWorksheet->getCell($columns[$col++] . $row)->setValueExplicit($order->identication, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $activeWorksheet->setCellValue($columns[$col++] . $row, $order->name);
-            $activeWorksheet->setCellValue($columns[$col++]  . $row,  $this->vtconvertion($order->voucher_type));
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->date);
-            $activeWorksheet->getCell($columns[$col++]  . $row)->setValueExplicit($order->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->serie);
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->no_iva);
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->base0);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $this->vtconvertion($order->voucher_type));
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->date);
+            $activeWorksheet->getCell($columns[$col++] . $row)->setValueExplicit($order->authorization, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->serie);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->no_iva);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->base0);
             if (!$after && $company->base5) {
-                $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->base5);
+                $activeWorksheet->setCellValue($columns[$col++] . $row, $order->base5);
             }
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->{$after ? 'base12' : 'base15'});
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->{$after ? 'base12' : 'base15'});
             if (!$after && $company->base5) {
-                $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->iva5);
+                $activeWorksheet->setCellValue($columns[$col++] . $row, $order->iva5);
             }
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $after ? $order->iva : $order->iva15);
-            $activeWorksheet->setCellValue($columns[$col++]  . $row, $order->total);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $after ? $order->iva : $order->iva15);
+            $activeWorksheet->setCellValue($columns[$col++] . $row, $order->total);
             $activeWorksheet->setCellValue($columns[$col++] . $row, $order->state);
             $row++;
         }
