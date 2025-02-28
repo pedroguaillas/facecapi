@@ -34,10 +34,19 @@ class OrderLotController extends Controller
         $excelData = $this->getData($request);
 
         $all = true;
+        $limit = 0;
         foreach ($excelData as $item) {
-            if ($item[0] === null || $item[2] === null || $item[3] === null || $item[4] === null) $all = false;
-            if ($item[0]) $identifications[] = $item[0];
-            if ($item[2]) $codes[] = $item[2];
+            if ($item[0] === null || $item[2] === null || $item[3] === null || $item[4] === null)
+                $all = false;
+            if ($item[0])
+                $identifications[] = $item[0];
+            if ($item[2])
+                $codes[] = $item[2];
+            $limit++;
+        }
+
+        if (!$limit > 50) {
+            return response()->json(['msm' => 'Limite maximo permite 50 registros']);
         }
 
         if (!$all) {
