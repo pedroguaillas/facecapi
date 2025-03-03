@@ -95,6 +95,14 @@ class OrderController extends Controller
             $input['guia'] = null;
         }
 
+        // Extraer la serie RECIVIDA en este formato 001-001-
+        $serie = substr($request->serie, 0, 8);
+        $emisionPoint = EmisionPoint::find($request->point_id);
+        // Evitar secuencía duplicada
+        $serie .= str_pad($emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}, 9, "0", STR_PAD_LEFT);
+        // Modifica la nueva serie
+        $input = [...$input, 'serie' => $serie];
+
         if ($order = $branch->orders()->create($input)) {
 
             // Registro de los Items de la Orden
@@ -155,7 +163,6 @@ class OrderController extends Controller
             }
 
             // Actualizar secuencia del comprobante
-            $emisionPoint = EmisionPoint::find($request->point_id);
             $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'} = (int) substr($request->serie, 8) + 1;
             $emisionPoint->save();
 
