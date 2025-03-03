@@ -163,7 +163,7 @@ class OrderController extends Controller
             }
 
             // Actualizar secuencia del comprobante
-            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'} = (int) substr($request->serie, 8) + 1;
+            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}++;
             $emisionPoint->save();
 
             if ($request->get('send')) {
