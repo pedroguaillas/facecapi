@@ -162,7 +162,7 @@ class SettlementOnPurchaseXmlController extends Controller
 
         $string .= '<detalles>';
         foreach ($sale_items as $detail) {
-            $total = $detail->quantity * $detail->price;
+            $total = round($detail->quantity * $detail->price, 2);
             // $discount = round($sub_total * $detail->discount * .01, 2);
             // $total = $sub_total - $discount;
             $percentage = $detail->iva === 4 ? 15 : 0;
