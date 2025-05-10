@@ -30,7 +30,8 @@ class OrderXmlController extends Controller
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        if (!$company->active_voucher) return;
+        if (!$company->active_voucher)
+            return;
 
         $order = Order::join('customers AS c', 'c.id', 'customer_id')
             ->select('c.identication', 'c.name', 'c.address', 'c.type_identification', 'orders.*')
@@ -65,7 +66,7 @@ class OrderXmlController extends Controller
     private function sign($company, $order, $str_xml_voucher)
     {
         $order->authorization = substr($str_xml_voucher, strpos($str_xml_voucher, '<claveAcceso>') + 13, 49);
-        $file =  $order->authorization . '.xml';
+        $file = $order->authorization . '.xml';
         $date = new \DateTime($order->date);
 
         $rootfile = 'xmls' . DIRECTORY_SEPARATOR . $company->ruc . DIRECTORY_SEPARATOR .
@@ -109,6 +110,8 @@ class OrderXmlController extends Controller
                 // Elimina el archivo CREADO
                 Storage::delete($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SAVED . DIRECTORY_SEPARATOR . $file);
                 $order->save();
+
+                (new WSSriOrderController())->send($order->id);
             }
         }
     }
@@ -460,9 +463,9 @@ class OrderXmlController extends Controller
         $string .= '<secuencial>' . substr($serie, 6, 9) . '</secuencial>';
         $string .= '<dirMatriz>' . $branch->address . '</dirMatriz>';
 
-        $string .= (int)$company->retention_agent === 1 ? '<agenteRetencion>1</agenteRetencion>' : null;
-        $string .= (int)$company->rimpe === 1 ? '<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
-        $string .= (int)$company->rimpe === 2 ? '<contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
+        $string .= (int) $company->retention_agent === 1 ? '<agenteRetencion>1</agenteRetencion>' : null;
+        $string .= (int) $company->rimpe === 1 ? '<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
+        $string .= (int) $company->rimpe === 2 ? '<contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
 
         $string .= '</infoTributaria>';
 

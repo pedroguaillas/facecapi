@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Shop;
 use App\Models\ShopItem;
 use App\StaticClasses\VoucherStates;
+use stdClass;
 
 class SettlementOnPurchaseXmlController extends Controller
 {
@@ -36,13 +37,14 @@ class SettlementOnPurchaseXmlController extends Controller
             ->where('shops.id', $id)
             ->first();
 
-        $shop_items = ShopItem::join('products AS p', 'p.id', 'shop_items.product_id')
+        $shop_items = ShopItem::select('p.id', 'p.code', 'p.name', 'shop_items.quantity', 'shop_items.price', 'shop_items.iva')
+            ->join('products AS p', 'p.id', 'product_id')
             ->where('shop_id', $id)
             ->get();
 
         $str_xml_voucher = null;
 
-        if ((int)$shop->voucher_type === 3) {
+        if ((int) $shop->voucher_type === 3) {
             $str_xml_voucher = $this->purchasesettlement($shop, $company, $shop_items);
             $this->sign($company, $shop, $str_xml_voucher);
         }
@@ -137,11 +139,12 @@ class SettlementOnPurchaseXmlController extends Controller
             $string .= "<totalImpuesto>";
             $string .= "<codigo>2</codigo>";    // Aplied only tax to IVA
             $string .= "<codigoPorcentaje>$tax->percentageCode</codigoPorcentaje>";
-            $string .= "<baseImponible>$tax->base</baseImponible>";
+            $string .= "<baseImponible>" . number_format($tax->base, 2, '.', '') . "</baseImponible>";
             $string .= "<tarifa>$tax->percentage</tarifa>";
-            $string .= "<valor>$tax->value</valor>";
+            $string .= "<valor>" . round($tax->base * $tax->percentage / 100, 2) . "</valor>";
             $string .= "</totalImpuesto>";
         }
+
         $string .= '</totalConImpuestos>';
 
         $string .= '<importeTotal>' . round($sale->total, 2) . '</importeTotal>';
@@ -159,27 +162,23 @@ class SettlementOnPurchaseXmlController extends Controller
 
         $string .= '<detalles>';
         foreach ($sale_items as $detail) {
-            $sub_total = $detail->quantity * $detail->price;
-            $discount = round($sub_total * $detail->discount * .01, 2);
-            $total = $sub_total - $discount;
-            $percentage = $detail->iva === 2 ? 12 : 0;
+            $total = round($detail->quantity * $detail->price, 2);
+            $percentage = $detail->iva === 4 ? 15 : 0;
 
             $string .= "<detalle>";
 
             $string .= "<codigoPrincipal>" . $detail->code . "</codigoPrincipal>";
-            $string .= "<codigoAuxiliar>" . $detail->code . "</codigoAuxiliar>";
             $string .= "<descripcion>" . $detail->name . "</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
-            $string .= "<descuento>" . $detail->discount . "</descuento>";
-            $string .= "<precioTotalSinImpuesto>" . $sub_total . "</precioTotalSinImpuesto>";
+            $string .= "<precioTotalSinImpuesto>" . $total . "</precioTotalSinImpuesto>";
 
             $string .= "<impuestos>";
             // foreach ($this->taxes as $tax) {
             $string .= "<impuesto>";
             $string .= "<codigo>2</codigo>";
             $string .= "<codigoPorcentaje>" . $detail->iva . "</codigoPorcentaje>";
-            $string .= "<tarifa>" . ($detail->iva === 2 ? 12 : 0) . "</tarifa>";
+            $string .= "<tarifa>$percentage</tarifa>";
             $string .= "<baseImponible>" . $total . "</baseImponible>";
             $string .= "<valor>" . round($percentage * $total * .01, 2) . "</valor>";
             $string .= "</impuesto>";
@@ -200,25 +199,41 @@ class SettlementOnPurchaseXmlController extends Controller
         $taxes = array();
         foreach ($order_items as $tax) {
             $sub_total = number_format($tax->quantity * $tax->price, 2, '.', '');
-            $discount = round($sub_total * $tax->discount * .01, 2);
-            $total = $sub_total - $discount;
-            $percentage = $tax->iva === 2 ? 12 : 0;
+            $total = $sub_total + $tax->valice - $tax->discount;
+            $percentage = $tax->iva === 4 ? 15 : 0;
 
+            $tax->code = 2;
+            $tax->percentageCode = $tax->iva;
+            $tax->percentage = $percentage;
+
+            // Impuesto al IVA
             $gruping = $this->grupingExist($taxes, $tax);
             if ($gruping !== -1) {
-                $aux2 = $taxes[$gruping];
-                $aux2->base += $total;
-                $aux2->value += round($percentage * $total * .01, 2);
+                // Solo sumar el total a la base
+                $taxes[$gruping]->base += $total;
             } else {
-                $aux = [
-                    'percentageCode' => $tax->iva,
-                    'percentage' => $percentage,
-                    'base' => $total,
-                    'value' => round($percentage * $total * .01, 2)
-                ];
-                $aux = json_encode($aux);
-                $aux = json_decode($aux);
-                $taxes[] = $aux;
+                $taxIva = new stdClass;
+                $taxIva->code = 2;
+                $taxIva->percentageCode = $tax->iva;
+                $taxIva->percentage = $tax->percentage;
+                $taxIva->base = $total;
+                $taxes[] = $taxIva;
+            }
+
+            // Impuesto al ICE
+            if ($tax->codice !== null && $tax->valice > 0) {
+                $taxIce = new stdClass;
+                $taxIce->code = 3;
+                $taxIce->percentageCode = $tax->codice;
+
+                $gruping = $this->grupingExist($taxes, $taxIce);
+                if ($gruping !== -1) {
+                    // Solo sumar el sub_total a la base
+                    $taxes[$gruping]->base += $sub_total;
+                } else {
+                    $taxIce->base = $sub_total;
+                    $taxes[] = $taxIce;
+                }
             }
         }
 
@@ -231,8 +246,10 @@ class SettlementOnPurchaseXmlController extends Controller
         $i = 0;
         while ($i < count($taxes) && $result == -1) {
             if (
-                $taxes[$i]->percentageCode === $tax->iva
-                // && $taxes[$i]->percentage === $tax->percentage
+                // code: 2 IVA - 3 ICE
+                $taxes[$i]->code == $tax->code &&
+                // percentageCode: 0 - 2 - 6 IVA - 3092... ICE
+                $taxes[$i]->percentageCode === $tax->percentageCode
             ) {
                 $result = $i;
             }
@@ -240,6 +257,52 @@ class SettlementOnPurchaseXmlController extends Controller
         }
         return $result;
     }
+
+    // public function grupingTaxes($order_items)
+    // {
+    //     $taxes = array();
+    //     foreach ($order_items as $tax) {
+    //         $sub_total = number_format($tax->quantity * $tax->price, 2, '.', '');
+    //         $discount = round($sub_total * $tax->discount * .01, 2);
+    //         $total = $sub_total - $discount;
+    //         $percentage = $tax->iva === 2 ? 12 : 0;
+
+    //         $gruping = $this->grupingExist($taxes, $tax);
+    //         if ($gruping !== -1) {
+    //             $aux2 = $taxes[$gruping];
+    //             $aux2->base += $total;
+    //             $aux2->value += round($percentage * $total * .01, 2);
+    //         } else {
+    //             $aux = [
+    //                 'percentageCode' => $tax->iva,
+    //                 'percentage' => $percentage,
+    //                 'base' => $total,
+    //                 'value' => round($percentage * $total * .01, 2)
+    //             ];
+    //             $aux = json_encode($aux);
+    //             $aux = json_decode($aux);
+    //             $taxes[] = $aux;
+    //         }
+    //     }
+
+    //     return $taxes;
+    // }
+
+    // private function grupingExist($taxes, $tax)
+    // {
+    //     $result = -1;
+    //     $i = 0;
+    //     while ($i < count($taxes) && $result == -1) {
+    //         if (
+    //             $taxes[$i]->percentageCode === $tax->iva
+    //             // && $taxes[$i]->percentage === $tax->percentage
+    //         ) {
+    //             $result = $i;
+    //         }
+    //         $i++;
+    //     }
+    //     return $result;
+    // }
 
     private function infoTributaria($company, $order)
     {
@@ -268,8 +331,8 @@ class SettlementOnPurchaseXmlController extends Controller
         $string .= '<secuencial>' . substr($serie, 6, 9) . '</secuencial>';
         $string .= '<dirMatriz>' . $branch->address . '</dirMatriz>';
 
-        $string .= (int)$company->retention_agent === 1 ? '<agenteRetencion>1</agenteRetencion>' : null;
-        $string .= (int)$company->rimpe === 1 ? '<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
+        $string .= (int) $company->retention_agent === 1 ? '<agenteRetencion>1</agenteRetencion>' : null;
+        $string .= (int) $company->rimpe === 1 ? '<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
 
         $string .= '</infoTributaria>';
 

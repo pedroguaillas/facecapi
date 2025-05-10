@@ -168,7 +168,6 @@ class OrderController extends Controller
 
             if ($request->get('send')) {
                 (new OrderXmlController())->xml($order->id);
-                (new WSSriOrderController())->send($order->id);
             }
         }
     }

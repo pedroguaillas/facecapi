@@ -35,6 +35,8 @@ services:
     networks:
       - lumen-network
     platform: linux/amd64  # Important for M1 compatibility
+    volumes:
+      - my-datavolume:/var/lib/mysql
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -64,3 +66,7 @@ services:
 networks:
   lumen-network:
     driver: bridge
+
+volumes:
+  my-datavolume:
+    driver: local

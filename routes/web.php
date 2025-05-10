@@ -31,8 +31,6 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->get('dashboard', 'DashboardController@index');
     $router->get('downloadsign', 'CompanyController@downloadSign');
 
-    // Enviar correo test
-
     // Logout
     $router->get('logout', 'AuthController@logout');
 
@@ -51,34 +49,34 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->put('points/update/{id}', 'EmisionPointController@update');
 
     // Categories
-    $router->get('categories', 'CategoryController@index');
-    $router->post('categories', 'CategoryController@store');
-    $router->get('categories/{id}', 'CategoryController@show');
-    $router->put('categories/{id}', 'CategoryController@update');
-    $router->delete('categories/{id}', 'CategoryController@destroy');
+    // $router->get('categories', 'CategoryController@index');
+    // $router->post('categories', 'CategoryController@store');
+    // $router->get('categories/{id}', 'CategoryController@show');
+    // $router->put('categories/{id}', 'CategoryController@update');
+    // $router->delete('categories/{id}', 'CategoryController@destroy');
 
-    // Unity
-    $router->get('unities', 'UnityController@index');
-    $router->post('unities', 'UnityController@store');
+    // // Unity
+    // $router->get('unities', 'UnityController@index');
+    // $router->post('unities', 'UnityController@store');
 
-    // Account
-    $router->get('chartaccounts', 'ChartAccountController@index');
-    $router->get('chartaccountspdf', 'ChartAccountController@indexPdf');
-    $router->post('chartaccounts', 'ChartAccountController@store');
+    // // Account
+    // $router->get('chartaccounts', 'ChartAccountController@index');
+    // $router->get('chartaccountspdf', 'ChartAccountController@indexPdf');
+    // $router->post('chartaccounts', 'ChartAccountController@store');
 
-    // Ledger
-    $router->get('chartaccountsledger', 'ChartAccountController@ledger');
-    $router->get('balancepurchase', 'ChartAccountController@balancepurchase');
-    $router->get('balanceSheet', 'ChartAccountController@balanceSheet');
-    $router->get('balanceSheetPdf/{level}', 'ChartAccountController@balanceSheetPdf');
-    $router->get('resultState', 'ChartAccountController@resultState');
-    $router->get('resultStatePdf/{level}', 'ChartAccountController@resultStatePdf');
+    // // Ledger
+    // $router->get('chartaccountsledger', 'ChartAccountController@ledger');
+    // $router->get('balancepurchase', 'ChartAccountController@balancepurchase');
+    // $router->get('balanceSheet', 'ChartAccountController@balanceSheet');
+    // $router->get('balanceSheetPdf/{level}', 'ChartAccountController@balanceSheetPdf');
+    // $router->get('resultState', 'ChartAccountController@resultState');
+    // $router->get('resultStatePdf/{level}', 'ChartAccountController@resultStatePdf');
 
-    // Start Account Entries .....
-    // Diary Book
-    $router->get('accountentries', 'AccountEntryController@index');
-    // Register a new account entry
-    $router->post('accountentries', 'AccountEntryController@store');
+    // // Start Account Entries .....
+    // // Diary Book
+    // $router->get('accountentries', 'AccountEntryController@index');
+    // // Register a new account entry
+    // $router->post('accountentries', 'AccountEntryController@store');
     // End Account Entries .....
 
     //Products
