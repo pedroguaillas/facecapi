@@ -171,6 +171,7 @@ class SettlementOnPurchaseXmlController extends Controller
             $string .= "<descripcion>" . $detail->name . "</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
+            $string .= "<descuento>0.00</descuento> ";
             $string .= "<precioTotalSinImpuesto>" . $total . "</precioTotalSinImpuesto>";
 
             $string .= "<impuestos>";
