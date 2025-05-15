@@ -36,7 +36,12 @@ class OrderController extends Controller
         $search = $request->search;
 
         $orders = Order::join('customers AS c', 'c.id', 'customer_id')
-            ->select('orders.*', 'c.name', 'c.email')
+            ->select(
+                'orders.*',
+                'c.name',
+                'c.email',
+                \DB::raw("DATE_FORMAT(orders.date, '%d-%m-%Y') as date")
+            )
             ->orderBy('orders.id', 'DESC')
             ->where('orders.branch_id', $branch->id)
             ->where(function ($query) use ($search) {
@@ -74,7 +79,7 @@ class OrderController extends Controller
 
         return response()->json([
             'points' => $points,
-            'methodOfPayments' => MethodOfPayment::all(),
+            'methodOfPayments' => MethodOfPayment::whereNotIN('code', ['15', '17', '18', '21'])->get(),
             'pay_method' => $company->pay_method,
             'tourism' => $tourism,
         ]);
@@ -183,7 +188,13 @@ class OrderController extends Controller
             ->where('company_id', $company->id)
             ->get();
 
-        $order = Order::findOrFail($id);
+        $order = Order::find($id);
+
+        $filteredOrder = collect($order->toArray())
+            ->filter(function ($value) {
+                return !is_null($value);
+            })
+            ->all();
 
         $products = Product::join('order_items AS oi', 'product_id', 'products.id')
             ->select('products.*')
@@ -192,22 +203,33 @@ class OrderController extends Controller
 
         $orderitems = OrderItem::join('products', 'product_id', 'products.id')
             ->join('iva_taxes AS it', 'it.code', 'order_items.iva')
-            ->selectRaw('quantity,price,discount,order_items.ice,products.ice AS codice,product_id,it.code AS iva,it.percentage')
+            ->selectRaw('order_items.id,quantity,price,discount,order_items.ice,products.name,products.ice AS codice,product_id,it.code AS iva,it.percentage')
+            ->where('order_id', $order->id)
+            ->get()
+            ->map(function ($item) {
+                $item->total_iva = round(($item->quantity * $item->price) - $item->discount, 2);
+                // Si codice es null, eliminamos ice
+                if (is_null($item->codice)) {
+                    unset($item->ice);
+                    unset($item->codice);
+                }
+                return $item;
+            });
+
+        $orderaditionals = OrderAditional::select('id', 'name', 'description')
             ->where('order_id', $order->id)
             ->get();
-
-        $orderaditionals = OrderAditional::where('order_id', $order->id)->get();
 
         $customers = Customer::where('id', $order->customer_id)->get();
 
         return response()->json([
             'products' => ProductResources::collection($products),
             'customers' => CustomerResources::collection($customers),
-            'order' => $order,
+            'order' => $filteredOrder,
             'order_items' => $orderitems,
             'order_aditionals' => $orderaditionals,
             'points' => $points,
-            'methodOfPayments' => MethodOfPayment::all()
+            'methodOfPayments' => MethodOfPayment::whereNotIN('code', ['15', '17', '18', '21'])->get()
         ]);
     }
 
@@ -230,6 +252,10 @@ class OrderController extends Controller
             ->where('order_id', $id)
             ->get();
 
+        $enabledDiscount = $movement_items->contains(function ($item) {
+            return $item->discount > 0;
+        });
+
         $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
         $auth = Auth::user();
@@ -251,10 +277,10 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after'));
+                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
                 break;
             case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after'));
+                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
                 break;
         }
 
@@ -345,7 +371,7 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
 
-        if ($order->state === VoucherStates::AUTHORIZED)
+        if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED)
             return;
 
         if ($order->update($request->except(['id', 'products', 'send', 'aditionals']))) {

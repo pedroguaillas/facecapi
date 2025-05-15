@@ -77,7 +77,7 @@ class ReferralGuideController extends Controller
 
                 // Actualizar secuencia del comprobante
                 $emisionPoint = EmisionPoint::find($request->point_id);
-                $emisionPoint->referralguide = (int)substr($request->serie, 8) + 1;
+                $emisionPoint->referralguide = (int) substr($request->serie, 8) + 1;
                 $emisionPoint->save();
 
                 if ($request->get('send')) {
@@ -124,7 +124,7 @@ class ReferralGuideController extends Controller
         $movement->voucher_type = 6;
 
         $movement_items = ReferralGuideItem::join('products AS p', 'p.id', 'product_id')
-            ->select('p.*', 'referral_guide_items.quantity')
+            ->select('quantity', 'name', 'code')
             ->where('referral_guide_id', $id)
             ->get();
 
@@ -134,7 +134,7 @@ class ReferralGuideController extends Controller
 
         $branch = Branch::where([
             'company_id' => $company->id,
-            'store' => (int)substr($movement->serie, 0, 3),
+            'store' => (int) substr($movement->serie, 0, 3),
         ])->get();
 
         if ($branch->count() === 0) {
