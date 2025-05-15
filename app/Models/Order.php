@@ -6,11 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    protected $casts = [
-        'base8' => 'float',
-        'iva8' => 'float',
-    ];
-
     protected $fillable = [
         'branch_id', 'date',
         'description', 'sub_total',
@@ -38,6 +33,24 @@ class Order extends Model
         'base5', 'base8', 'base15', 'iva5', 'iva8', 'iva15',
         // Envio por lotes
         'lot_id',
+    ];
+    protected $casts = [
+        'no_iva' => 'float',
+        'base0' => 'float',
+        'base5' => 'float',
+        'base8' => 'float',
+        'base12' => 'float',
+        'base15' => 'float',
+        'ice' => 'float',
+        'discount' => 'float',
+        'iva5' => 'float',
+        'iva8' => 'float',
+        'iva' => 'float',
+        'iva15' => 'float',
+        'sub_total' => 'float',
+        'total' => 'float',
+        'voucher_type' => 'integer',
+        'send_mail' => 'boolean',
     ];
 
     public function orderitems()
