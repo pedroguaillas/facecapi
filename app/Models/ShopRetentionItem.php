@@ -11,6 +11,12 @@ class ShopRetentionItem extends Model
         'porcentage', 'value', 'shop_id'
     ];
 
+    protected $casts = [
+        'base' => 'float',
+        'porcentage' => 'float',
+        'value' => 'float',
+    ];
+
     public function shop()
     {
         return $this->belongsTo(Shop::class);

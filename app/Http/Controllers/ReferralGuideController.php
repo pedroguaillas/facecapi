@@ -30,7 +30,13 @@ class ReferralGuideController extends Controller
 
         $referralguide = ReferralGuide::join('carriers AS ca', 'ca.id', 'carrier_id')
             ->join('customers AS c', 'c.id', 'customer_id')
-            ->select('referral_guides.*', 'c.name', 'ca.name AS carrier_name')
+            ->select(
+                'referral_guides.*',
+                'c.name',
+                'ca.name AS carrier_name',
+                \DB::raw("DATE_FORMAT(date_start, '%d-%m-%Y') as date_start"),
+                \DB::raw("DATE_FORMAT(date_end, '%d-%m-%Y') as date_end"),
+            )
             ->where('c.branch_id', $branch->id)
             ->orderBy('referral_guides.created_at', 'DESC');
 
@@ -89,7 +95,13 @@ class ReferralGuideController extends Controller
 
     public function show($id)
     {
-        $referralguide = ReferralGuide::findOrFail($id);
+        $referralguide = ReferralGuide::find($id);
+
+        $filteredReferralguide = collect($referralguide->toArray())
+            ->filter(function ($value) {
+                return !is_null($value);
+            })
+            ->all();
 
         $products = Product::join('referral_guide_items AS rgi', 'product_id', 'products.id')
             ->select('products.*')
@@ -97,15 +109,19 @@ class ReferralGuideController extends Controller
             ->get();
 
         $referralguide_items = Product::join('referral_guide_items AS rgi', 'product_id', 'products.id')
-            ->select('products.iva', 'rgi.*')
+            ->select('rgi.id', 'quantity', 'name', 'product_id')
             ->where('referral_guide_id', $id)
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->quantity = floatval($item->quantity);
+                return $item;
+            });
 
         $customers = Customer::where('id', $referralguide->customer_id)->get();
         $carriers = Carrier::where('id', $referralguide->carrier_id)->get();
 
         return response()->json([
-            'referralguide' => $referralguide,
+            'referralguide' => $filteredReferralguide,
             'referralguide_items' => $referralguide_items,
             'customers' => CustomerResources::collection($customers),
             'carriers' => CarrierResources::collection($carriers),
