@@ -291,7 +291,11 @@ class OrderController extends Controller
     public function printfPdf($id)
     {
         $movement = Order::join('customers AS c', 'orders.customer_id', 'c.id')
-            ->select('orders.*', 'c.*')
+            ->select(
+                'orders.*',
+                \DB::raw("DATE_FORMAT(orders.date, '%d-%m-%Y') as date"),
+                'c.*'
+            )
             ->where('orders.id', $id)
             ->first();
 
@@ -319,22 +323,26 @@ class OrderController extends Controller
 
     public function generatePdf($id)
     {
-        $movement = Order::join('customers AS c', 'orders.customer_id', 'c.id')
-            ->select('orders.*', 'c.*')
+        $movement = Order::join('customers AS c', 'c.id', 'customer_id')
+            ->select('orders.*', 'c.identication', 'c.name', 'c.address')
             ->where('orders.id', $id)
             ->first();
 
         $after = false;
-        $dateToCheck = Carbon::parse($movement->date);
+        $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
 
         if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
             $after = true;
         }
 
-        $movement_items = OrderItem::join('products', 'products.id', 'order_items.product_id')
+        $movement_items = OrderItem::join('products', 'products.id', 'product_id')
             ->select('products.*', 'order_items.*')
-            ->where('order_items.order_id', $id)
+            ->where('order_id', $id)
             ->get();
+
+        $enabledDiscount = $movement_items->contains(function ($item) {
+            return $item->discount > 0;
+        });
 
         $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
@@ -357,10 +365,10 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = PDF::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after'));
+                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
                 break;
             case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals'));
+                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
                 break;
         }
 
