@@ -81,8 +81,15 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => 3600,
             'user' => $auth,
-            'inventory' => $company->inventory,
-            'decimal' => $company->decimal
+            // Permisos
+            'permissions' => [
+                'inventory' => $company->inventory,
+                'decimal' => $company->decimal,
+                'printf' => $company->printf,
+                'guia_in_invoice' => $company->guia_in_invoice,
+                'import_in_invoice' => $company->import_in_invoice,
+                'import_in_invoices' => $company->import_in_invoices,
+            ]
         ]);
     }
 
@@ -105,7 +112,8 @@ class AuthController extends Controller
             // uso el take porque puede que no exista registros
             ->take(1)->get();
 
-        if (!$this->validSerie($emisionPoint, $invoice, 'invoice', $store, $point)) return;
+        if (!$this->validSerie($emisionPoint, $invoice, 'invoice', $store, $point))
+            return;
 
         $cn = Order::select('serie')
             ->where([
@@ -115,7 +123,8 @@ class AuthController extends Controller
             ->orderBy('created_at', 'desc') // Para traer el ultimo
             ->take(1)->get();
 
-        if (!$this->validSerie($emisionPoint, $cn, 'creditnote', $store, $point)) return;
+        if (!$this->validSerie($emisionPoint, $cn, 'creditnote', $store, $point))
+            return;
 
         $set_purchase = Shop::select('serie')
             ->where([
@@ -125,24 +134,28 @@ class AuthController extends Controller
             ->orderBy('created_at', 'desc') // Para traer el ultimo
             ->take(1)->get();
 
-        if (!$this->validSerie($emisionPoint, $set_purchase, 'settlementonpurchase', $store, $point)) return;
+        if (!$this->validSerie($emisionPoint, $set_purchase, 'settlementonpurchase', $store, $point))
+            return;
 
         $retention = Shop::select('serie_retencion AS serie')
             ->where('branch_id', $branch_id) // De la sucursal específico
             ->orderBy('created_at', 'desc') // Para traer el ultimo
             ->take(1)->get();
 
-        if (!$this->validSerie($emisionPoint, $retention, 'retention', $store, $point)) return;
+        if (!$this->validSerie($emisionPoint, $retention, 'retention', $store, $point))
+            return;
 
         $referralGuide = ReferralGuide::select('serie')
             ->where('branch_id', $branch_id) // De la sucursal especifico
             ->orderBy('created_at', 'desc') // Para traer el ultimo
             ->take(1)->get();
 
-        if (!$this->validSerie($emisionPoint, $referralGuide, 'referralguide', $store, $point)) return;
+        if (!$this->validSerie($emisionPoint, $referralGuide, 'referralguide', $store, $point))
+            return;
 
         // Si el Punto de Emision es nulo salir
-        if ($point === null) return;
+        if ($point === null)
+            return;
 
         $emisionPoint->branch_id = $branch_id;
         $emisionPoint->point = $point;

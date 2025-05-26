@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\IceCataloge;
 use App\Models\IvaTax;
 use App\Models\Product;
+use App\Models\OrderItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -136,42 +137,33 @@ class ProductController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
-        $prods = $request->get('prods');
+        $prods = $request->get('prods'); // array con code, price, quantity
 
-        $products = Product::select('id', 'code', 'name', 'price1', 'iva')
+        $codes = array_column($prods, 'code'); // extrae los códigos directamente
+
+        $orderItems = Product::join('iva_taxes AS it', 'it.code', 'iva')
+            ->selectRaw('products.id, products.code, price1 AS price, name, it.code AS iva, it.percentage')
             ->where('branch_id', $branch->id)
-            ->whereIn('code', $this->toArrayCodes($prods))
-            ->get();
+            ->whereIn('products.code', $codes)
+            ->get()
+            ->map(function ($item) use ($prods) {
+                // buscar el producto original por code
+                $prodRequest = collect($prods)->firstWhere('code', $item->code);
 
-        $order_items = [];
+                $price = $prodRequest['price'] ?? $item->price; // fallback al precio original si no está
+                $quantity = $prodRequest['quantity'] ?? 1;
 
-        foreach ($products as $product) {
-            $prod = $this->findObjectById($product->code, $prods);
-            $price = $prod['price'] ?? floatval($product->price1);
-            $product->price1 = $price;
-            array_push($order_items, [
-                'product_id' => $product->id,
-                'discount' => 0,
-                'iva' => $product->iva,
-                'price' => $price,
-                'quantity' => $prod['quantity'],
-                'total_iva' => $price * $prod['quantity']
-            ]);
-        }
+                $item->price = $price;
+                $item->quantity = $quantity;
+                $item->discount = 0;
+                $item->total_iva = round($quantity * $price, 2);
+
+                return $item;
+            });
 
         return response()->json([
-            'products' => $products,
-            'order_items' => $order_items
+            'orderItems' => $orderItems
         ]);
-    }
-
-    function toArrayCodes($objs)
-    {
-        $codes = array();
-        foreach ($objs as $obj) {
-            array_push($codes, $obj['code']);
-        }
-        return $codes;
     }
 
     function findObjectById($id, $array)
