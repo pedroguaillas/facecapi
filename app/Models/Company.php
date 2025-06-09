@@ -49,11 +49,15 @@ class Company extends Model
     ];
 
     protected $casts = [
+        'micro_business' => 'boolean',
+        'accounting' => 'boolean',
         'base8' => 'boolean',
         'tourism_from' => 'date',
         'tourism_to' => 'date',
         'inventory' => 'boolean',
         'ice' => 'boolean',
+        'rimpe' => 'integer',
+        'sign_valid_to' => 'datetime',
 
         // New facec.ec
         'printf' => 'boolean',

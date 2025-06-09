@@ -23,8 +23,7 @@ class CompanyController extends Controller
         $level = $auth->companyusers->first();
 
         $company = Company::find($level->level_id);
-        $company->accounting = $company->accounting === 1;
-        $company->micro_business = $company->micro_business === 1;
+        $company->retention_agent = $company->retention_agent === 1;
 
         return response()->json(['company' => $company]);
     }
@@ -98,7 +97,6 @@ class CompanyController extends Controller
                 'user' => $user
             ]);
 
-            return response()->json(['message' => 'Registrado compañia']);
         } else {
             return response()->json(['message' => 'Errores desconocidos']);
         }
@@ -117,51 +115,35 @@ class CompanyController extends Controller
 
     public function update(Request $request)
     {
-        $company = Company::find($request->id);
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
 
         // New Object constraint
-        $input = $request->except(['logo', 'cert', 'extention_cert', 'pass_cert']);
-
+        $input = $request->except(['logo', 'cert', 'pass_cert']);
         // Load logo
-        if ($request->logo !== NULL) {
+        if ($request->hasFile('logo')) {
             // Load from API
             $image = $request->file('logo');
-            $imagename = $request->ruc . '.' . $image->getClientOriginalExtension();
+            $imagename = $company->ruc . '.' . $image->getClientOriginalExtension();
             $request->file('logo')->storeAs('logos', $imagename);
             $input['logo_dir'] = $imagename;
         }
 
-        if ($request->cert !== NULL) {
+        $input['sign_valid_to'] = $company->sign_valid_to;
 
-            $certname = $request->ruc . $request->extention_cert;
+        if ($request->hasFile('cert')) {
+
+            $certname = $company->ruc . '.p12';
 
             $request->file('cert')->storeAs('cert', $certname);
 
-            // $results = array();
-            // if (openssl_pkcs12_read(Storage::get('cert' . DIRECTORY_SEPARATOR . $certname), $results, $request->pass_cert)) {
-            //     $cert = $results['cert'];
-            //     openssl_x509_export($cert, $certout);
-            //     $data = openssl_x509_parse($certout);
-            //     $validFrom = \DateTime::createFromFormat('U', strval($data['validFrom_time_t']));
-            //     $validFrom->setTimeZone(new \DateTimeZone('America/Guayaquil'));
-            //     $input['sign_valid_from'] = $validFrom->format('Y/m/d H:i:s');
-            //     $validTo = \DateTime::createFromFormat('U', strval($data['validTo_time_t']));
-            //     $validTo->setTimeZone(new \DateTimeZone('America/Guayaquil'));
-            //     $input['sign_valid_to'] = $validTo->format('Y/m/d H:i:s');
-            //     $date_aux = date('Y/m/d H:i:s');
-
-            //     // Valid cert
-            //     if (!(($date_aux >= $input['sign_valid_from']) && ($date_aux <= $input['sign_valid_to']))) {
-            //         return response()->json(['message' => 'EXPIRED_DIGITAL_CERT'], 403);
-            //     }
-            // }
-
             $input['cert_dir'] = $certname;
             $input['pass_cert'] = $request->pass_cert;
+            $input['sign_valid_to'] = $request->sign_valid_to;
         }
 
-        $input['accounting'] = $request->accounting === 'true' ? 1 : 0;
-        // $input['rimpe'] = $request->rimpe === 'true' ? 1 : 0;
+        $input['accounting'] = filter_var($request->input('accounting'), FILTER_VALIDATE_BOOLEAN);
 
         if ($company->update($input)) {
             return response()->json(['message' => 'Actualizado compañia', 'inputs' => $input]);

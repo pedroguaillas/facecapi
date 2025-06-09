@@ -64,6 +64,17 @@ class AuthController extends Controller
 
         $auth = JWTAuth::user();
         $level = $auth->companyusers->first();
+
+        // Auth admin
+        if ($auth->user_type_id === 1) {
+            return response()->json([
+                'token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => 3600,
+                'user' => $auth,
+            ]);
+        }
+
         $company = Company::find($level->level_id);
 
         $points = Branch::select('branches.id AS branch_id', 'store', 'point')
