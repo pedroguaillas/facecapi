@@ -23,7 +23,9 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 $router->group(['middleware' => 'jwt.verify'], function ($router) {
 
     // Admin
-    $router->get('admin/customers', 'Admin/CustomerController@index');
+    $router->get('admin/companies', 'Admin\CompanyController@index');
+    $router->get('admin/companies/sri/{identification}', 'Admin\CompanyController@searchByRuc');
+    $router->post('admin/companies', 'Admin\CompanyController@store');
 
     // me
     $router->get('me', 'AuthController@me');

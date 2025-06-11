@@ -10,7 +10,6 @@ use App\Models\Company;
 use App\Models\IceCataloge;
 use App\Models\IvaTax;
 use App\Models\Product;
-use App\Models\OrderItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -153,6 +152,7 @@ class ProductController extends Controller
                 $price = $prodRequest['price'] ?? $item->price; // fallback al precio original si no está
                 $quantity = $prodRequest['quantity'] ?? 1;
 
+                $item->product_id = (int) $item->id;
                 $item->price = $price;
                 $item->quantity = $quantity;
                 $item->discount = 0;
