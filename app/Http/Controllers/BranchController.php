@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use App\Models\Company;
 use App\Models\Branch;
 
@@ -23,6 +24,17 @@ class BranchController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
+
+        $this->validate($request, [
+            'store' => [
+                'required',
+                Rule::unique('branches')->where(function ($query) use ($company) {
+                    return $query->where('company_id', $company->id);
+                }),
+            ],
+            'address' => 'required|min:3|max:300',
+        ]);
+
         $branch = $company->branches()->create($request->except('cf'));
 
         // Si crear consumidor final

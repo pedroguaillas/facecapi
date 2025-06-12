@@ -27,7 +27,7 @@ class CompanyController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $this->validate($request, [
             'ruc' => 'required|unique:companies,ruc',
             'user' => 'required|unique:users,user',
         ]);
@@ -36,6 +36,7 @@ class CompanyController extends Controller
 
         $input['enviroment_type'] = 2;
         $input['decimal'] = 6;
+        $input['economic_activity'] = 'otros';
 
         $company = Company::create($input);
         $user = $request->only(['user', 'password', 'email']);

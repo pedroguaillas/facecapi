@@ -18,30 +18,43 @@ class DashboardController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
+
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
-        $active = $company->active_voucher;
-        $expired = $company->expired;
+        $active = true;
+        $expired = null;
+        $orders = [];
+        $shops = [];
+        $count_orders = 0;
+        $count_shops = 0;
+        $count_customers = 0;
+        $count_providers = 0;
 
-        $orders = Order::selectRaw("SUM(total) as ingreso, DATE_FORMAT(date, '%m-%Y') AS name, DATE_FORMAT(date, '%Y%m') AS orden")
-            ->where('branch_id', $branch->id)
-            ->groupBy('name', 'orden')
-            ->orderBy('orden', 'desc')
-            ->take(5)->get();
+        if ($branch) {
 
-        $shops = Shop::selectRaw("SUM(total) as egreso, DATE_FORMAT(date, '%m-%Y') AS name, DATE_FORMAT(date, '%Y%m') AS orden")
-            ->where('branch_id', $branch->id)
-            ->groupBy('name', 'orden')
-            ->orderBy('orden', 'desc')
-            ->take(5)->get();
+            $active = $company->active_voucher;
+            $expired = $company->expired;
 
-        $count_orders = Order::where('branch_id', $branch->id)->count();
-        $count_shops = Shop::where('branch_id', $branch->id)->count();
+            $orders = Order::selectRaw("SUM(total) as ingreso, DATE_FORMAT(date, '%m-%Y') AS name, DATE_FORMAT(date, '%Y%m') AS orden")
+                ->where('branch_id', $branch->id)
+                ->groupBy('name', 'orden')
+                ->orderBy('orden', 'desc')
+                ->take(5)->get();
 
-        $count_customers = Customer::where(['branch_id' => $branch->id])
-            ->where('type_identification', '<>', 'cf')->count();
-        $count_providers = Provider::where('branch_id', $branch->id)->count();
+            $shops = Shop::selectRaw("SUM(total) as egreso, DATE_FORMAT(date, '%m-%Y') AS name, DATE_FORMAT(date, '%Y%m') AS orden")
+                ->where('branch_id', $branch->id)
+                ->groupBy('name', 'orden')
+                ->orderBy('orden', 'desc')
+                ->take(5)->get();
+
+            $count_orders = Order::where('branch_id', $branch->id)->count();
+            $count_shops = Shop::where('branch_id', $branch->id)->count();
+
+            $count_customers = Customer::where(['branch_id' => $branch->id])
+                ->where('type_identification', '<>', 'cf')->count();
+            $count_providers = Provider::where('branch_id', $branch->id)->count();
+        }
 
         return response()->json([
             'active' => $active,
