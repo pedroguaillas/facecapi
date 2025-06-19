@@ -82,12 +82,8 @@ class SettlementOnPurchaseXmlController extends Controller
                 Storage::makeDirectory($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED);
             }
 
-            // $rootfile = Storage::path($rootfile);
             $newrootfile = Storage::path($rootfile);
-
-            // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
             $java_firma = "java -jar $public_path/public/Firma/dist/Firma.jar $cert $company->pass_cert $newrootfile/CREADO/$file $newrootfile/FIRMADO $file";
-
             $variable = system($java_firma);
 
             // Si se creo el archivo FIRMADO entonces guardar estado FIRMADO Y el nuevo path XML

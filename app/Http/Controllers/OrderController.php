@@ -93,7 +93,6 @@ class OrderController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
-        // Nuevo objeto para agregar metodo de pago
         $input = $request->except(['products', 'send', 'aditionals', 'point_id']);
 
         if (array_key_exists("guia", $input) && trim($input['guia']) === '') {

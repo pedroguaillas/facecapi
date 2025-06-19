@@ -75,8 +75,6 @@ class ShopController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
-        $except = ['taxes', 'pay_methods', 'app_retention', 'send', 'point_id'];
-
         // Inicio ... Validar que se anule la retencion anterior
         $shop_verfiy = Shop::where([
             ['branch_id', $branch->id],
@@ -91,7 +89,30 @@ class ShopController extends Controller
         }
         // Fin ... Validar que se anule la retencion anterior
 
-        if ($shop = $branch->shops()->create($request->except($except))) {
+        $except = ['taxes', 'pay_methods', 'app_retention', 'send', 'point_id'];
+        $inputs = $request->except($except);
+
+        // Validar existencia del punto de emisión
+        $emisionPoint = EmisionPoint::findOrFail($request->point_id);
+
+        // Serie para comprobante
+        if ((int) $request->voucher_type === 3) {
+            $serieBase = substr($request->serie, 0, 8);
+            $secuencial = str_pad((int) $emisionPoint->settlementonpurchase, 9, "0", STR_PAD_LEFT);
+            $inputs['serie'] = $serieBase . $secuencial;
+            $inputs['state'] = 'CREADO';
+        }
+
+        // Serie para retención
+        $taxes = $request->get('taxes');
+        if ($request->boolean('app_retention') && is_array($taxes) && count($taxes) > 0) {
+            $serieBaseRet = substr($request->serie_retencion, 0, 8);
+            $secuencialRet = str_pad((int) $emisionPoint->retention, 9, "0", STR_PAD_LEFT);
+            $inputs['serie_retencion'] = $serieBaseRet . $secuencialRet;
+            $inputs['state_retencion'] = 'CREADO';
+        }
+
+        if ($shop = $branch->shops()->create($inputs)) {
 
             $send_set = false;
 
@@ -146,10 +167,10 @@ class ShopController extends Controller
             // Si aplica retención es liquidación en compra
             if ($request->has('point_id')) {
                 $emisionPoint = EmisionPoint::find($request->point_id);
-                if ($request->voucher_type === 3)
-                    $emisionPoint->settlementonpurchase = (int) substr($request->serie, 8) + 1;
+                if ((int) $request->voucher_type === 3)
+                    $emisionPoint->settlementonpurchase += 1;
                 if ($request->app_retention)
-                    $emisionPoint->retention = (int) substr($request->serie_retencion, 8) + 1;
+                    $emisionPoint->retention += 1;
                 $emisionPoint->save();
             }
 
@@ -179,7 +200,7 @@ class ShopController extends Controller
             ->get();
 
         $shopitems = ShopItem::join('products AS p', 'product_id', 'p.id')
-            ->select( 'p.name', 'shop_items.*')
+            ->select('p.name', 'shop_items.*')
             ->where('shop_id', $shop->id)
             ->get();
 

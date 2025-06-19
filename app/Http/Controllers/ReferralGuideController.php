@@ -67,7 +67,17 @@ class ReferralGuideController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
-        if ($referralguide = $branch->referralguides()->create($request->except(['products', 'send', 'point_id']))) {
+        $inputs = ($request->except(['products', 'send', 'point_id']));
+
+        // Extraer la serie RECIVIDA en este formato 001-001-
+        $serie = substr($request->serie, 0, 8);
+        $emisionPoint = EmisionPoint::find($request->point_id);
+        // Evitar secuencía duplicada
+        $serie .= str_pad($emisionPoint->referralguide, 9, "0", STR_PAD_LEFT);
+        // Modifica la nueva serie
+        $inputs = [...$inputs, 'serie' => $serie];
+
+        if ($referralguide = $branch->referralguides()->create($inputs)) {
             $products = $request->get('products');
 
             if (count($products) > 0) {
@@ -80,15 +90,14 @@ class ReferralGuideController extends Controller
                 }
 
                 $referralguide->referralguidetems()->createMany($array);
+            }
 
-                // Actualizar secuencia del comprobante
-                $emisionPoint = EmisionPoint::find($request->point_id);
-                $emisionPoint->referralguide = (int) substr($request->serie, 8) + 1;
-                $emisionPoint->save();
+            // Actualizar secuencia del comprobante
+            $emisionPoint->referralguide++;
+            $emisionPoint->save();
 
-                if ($request->get('send')) {
-                    (new ReferralGuideXmlController())->xml($referralguide->id);
-                }
+            if ($request->get('send')) {
+                (new ReferralGuideXmlController())->xml($referralguide->id);
             }
         }
     }
