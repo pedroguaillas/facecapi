@@ -453,7 +453,7 @@ class OrderXmlController extends Controller
         $string .= '<infoTributaria>';
         $string .= '<ambiente>' . $company->enviroment_type . '</ambiente>';
         $string .= '<tipoEmision>1</tipoEmision>';
-        $string .= '<razonSocial>' . $company->company . '</razonSocial>';
+        $string .= '<razonSocial>' . str_replace("&", "", $company->company) . '</razonSocial>';
         $string .= $branch->name !== null ? '<nombreComercial>' . $branch->name . '</nombreComercial>' : null;
         $string .= '<ruc>' . $company->ruc . '</ruc>';
         $string .= '<claveAcceso>' . $keyaccess . $this->generaDigitoModulo11($keyaccess) . '</claveAcceso>';
