@@ -454,7 +454,7 @@ class OrderXmlController extends Controller
         $string .= '<ambiente>' . $company->enviroment_type . '</ambiente>';
         $string .= '<tipoEmision>1</tipoEmision>';
         $string .= '<razonSocial>' . str_replace("&", "", $company->company) . '</razonSocial>';
-        $string .= $branch->name !== null ? '<nombreComercial>' . $branch->name . '</nombreComercial>' : null;
+        $string .= $branch->name !== null ? '<nombreComercial>' . str_replace("&", "", $branch->name) . '</nombreComercial>' : null;
         $string .= '<ruc>' . $company->ruc . '</ruc>';
         $string .= '<claveAcceso>' . $keyaccess . $this->generaDigitoModulo11($keyaccess) . '</claveAcceso>';
         $string .= '<codDoc>' . $voucher_type . '</codDoc>';
