@@ -153,7 +153,7 @@ class OrderLotController extends Controller
         // Firmar
         $orderXmlController = new OrderXmlController();
         foreach ($orders as $item) {
-            $orderXmlController->xml($item->id);
+            $orderXmlController->xml($item->id, false);
         }
 
         // Crea Lote

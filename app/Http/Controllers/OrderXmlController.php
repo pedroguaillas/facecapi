@@ -24,7 +24,7 @@ class OrderXmlController extends Controller
         ]);
     }
 
-    public function xml($id)
+    public function xml($id, $send = true)
     {
         $auth = Auth::user();
         $level = $auth->companyusers->first();
@@ -60,10 +60,10 @@ class OrderXmlController extends Controller
                 break;
         }
 
-        $this->sign($company, $order, $str_xml_voucher);
+        $this->sign($company, $order, $str_xml_voucher, $send);
     }
 
-    private function sign($company, $order, $str_xml_voucher)
+    private function sign($company, $order, $str_xml_voucher, $send)
     {
         $order->authorization = substr($str_xml_voucher, strpos($str_xml_voucher, '<claveAcceso>') + 13, 49);
         $file = $order->authorization . '.xml';
@@ -98,7 +98,6 @@ class OrderXmlController extends Controller
 
             $newrootfile = Storage::path($rootfile);
 
-            // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
             $java_firma = "java -jar $public_path/public/Firma/dist/Firma.jar $cert " . $company->pass_cert . " $newrootfile/CREADO/$file $newrootfile/FIRMADO $file";
 
             system($java_firma);
@@ -111,7 +110,9 @@ class OrderXmlController extends Controller
                 Storage::delete($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SAVED . DIRECTORY_SEPARATOR . $file);
                 $order->save();
 
-                (new WSSriOrderController())->send($order->id);
+                if ($send) {
+                    (new WSSriOrderController())->send($order->id);
+                }
             }
         }
     }

@@ -243,6 +243,7 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
+        $company->logo_dir = $company->logo_dir ?: 'default.png';
 
         $branch = Branch::where([
             'company_id' => $company->id,
@@ -281,12 +282,12 @@ class ShopController extends Controller
             ->first();
 
         $movement->voucher_type = 7;
-
         $retention_items = $movement->shopretentionitems;
 
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
+        $company->logo_dir = $company->logo_dir ?: 'default.png';
 
         $branch = Branch::where([
             'company_id' => $company->id,
@@ -333,6 +334,7 @@ class ShopController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
+        $company->logo_dir = $company->logo_dir ?: 'default.png';
 
         $branch = Branch::where([
             'company_id' => $company->id,

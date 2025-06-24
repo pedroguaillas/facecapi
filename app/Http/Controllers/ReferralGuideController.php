@@ -156,6 +156,7 @@ class ReferralGuideController extends Controller
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
+        $company->logo_dir = $company->logo_dir ?: 'default.png';
 
         $branch = Branch::where([
             'company_id' => $company->id,

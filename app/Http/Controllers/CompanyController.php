@@ -28,79 +28,79 @@ class CompanyController extends Controller
         return response()->json(['company' => $company]);
     }
 
-    public function store(Request $request)
-    {
-        // New Object constraint
-        $input = $request->except(['logo', 'cert', 'user', 'password']);
+    // public function store(Request $request)
+    // {
+    //     // New Object constraint
+    //     $input = $request->except(['logo', 'cert', 'user', 'password']);
 
-        // Load logo
-        if ($request->logo === NULL) {
-            $input['logo_dir'] = 'default.png';
-        } else {
-            // Load from API
-            $image = $request->file('logo');
-            $imagename = $request->ruc . '.' . $image->getClientOriginalExtension();
-            $request->file('logo')->storeAs('logos', $imagename);
-            $input['logo_dir'] = $imagename;
-        }
+    //     // Load logo
+    //     if ($request->logo === NULL) {
+    //         $input['logo_dir'] = 'default.png';
+    //     } else {
+    //         // Load from API
+    //         $image = $request->file('logo');
+    //         $imagename = $request->ruc . '.' . $image->getClientOriginalExtension();
+    //         $request->file('logo')->storeAs('logos', $imagename);
+    //         $input['logo_dir'] = $imagename;
+    //     }
 
-        if ($request->cert !== NULL) {
+    //     if ($request->cert !== NULL) {
 
-            $certname = $request->ruc . $request->extention_cert;
+    //         $certname = $request->ruc . $request->extention_cert;
 
-            $request->file('cert')->storeAs('cert', $certname);
+    //         $request->file('cert')->storeAs('cert', $certname);
 
-            $results = array();
-            if (openssl_pkcs12_read(Storage::get('cert' . DIRECTORY_SEPARATOR . $certname), $results, $request->pass_cert)) {
-                $cert = $results['cert'];
-                openssl_x509_export($cert, $certout);
-                $data = openssl_x509_parse($certout);
-                $validFrom = \DateTime::createFromFormat('U', strval($data['validFrom_time_t']));
-                $validFrom->setTimeZone(new \DateTimeZone('America/Guayaquil'));
-                $input['sign_valid_from'] = $validFrom->format('Y/m/d H:i:s');
-                $validTo = \DateTime::createFromFormat('U', strval($data['validTo_time_t']));
-                $validTo->setTimeZone(new \DateTimeZone('America/Guayaquil'));
-                $input['sign_valid_to'] = $validTo->format('Y/m/d H:i:s');
-                $date_aux = date('Y/m/d H:i:s');
-                // Valid cert
-                // if (!(($date_aux >= $input['sign_valid_from']) && ($date_aux <= $input['sign_valid_to']))) {
-                //     return response()->json(['message' => 'EXPIRED_DIGITAL_CERT'], 403);
-                // } else {
-                // }
-                $input['cert_dir'] = $certname;
-            }
-        }
+    //         $results = array();
+    //         if (openssl_pkcs12_read(Storage::get('cert' . DIRECTORY_SEPARATOR . $certname), $results, $request->pass_cert)) {
+    //             $cert = $results['cert'];
+    //             openssl_x509_export($cert, $certout);
+    //             $data = openssl_x509_parse($certout);
+    //             $validFrom = \DateTime::createFromFormat('U', strval($data['validFrom_time_t']));
+    //             $validFrom->setTimeZone(new \DateTimeZone('America/Guayaquil'));
+    //             $input['sign_valid_from'] = $validFrom->format('Y/m/d H:i:s');
+    //             $validTo = \DateTime::createFromFormat('U', strval($data['validTo_time_t']));
+    //             $validTo->setTimeZone(new \DateTimeZone('America/Guayaquil'));
+    //             $input['sign_valid_to'] = $validTo->format('Y/m/d H:i:s');
+    //             $date_aux = date('Y/m/d H:i:s');
+    //             // Valid cert
+    //             // if (!(($date_aux >= $input['sign_valid_from']) && ($date_aux <= $input['sign_valid_to']))) {
+    //             //     return response()->json(['message' => 'EXPIRED_DIGITAL_CERT'], 403);
+    //             // } else {
+    //             // }
+    //             $input['cert_dir'] = $certname;
+    //         }
+    //     }
 
-        $input['accounting'] = $request->accounting === 'true' ? 1 : 0;
-        $input['micro_business'] = $request->micro_business === 'true' ? 1 : 0;
-        $input['rimpe'] = $request->rimpe === 'true' ? 1 : 0;
-        $input['enviroment_type'] = 2;
-        $input['decimal'] = 6;
+    //     $input['accounting'] = $request->accounting === 'true' ? 1 : 0;
+    //     $input['micro_business'] = $request->micro_business === 'true' ? 1 : 0;
+    //     $input['rimpe'] = $request->rimpe === 'true' ? 1 : 0;
+    //     $input['enviroment_type'] = 2;
+    //     $input['decimal'] = 6;
 
-        if (Company::create($input)) {
-            $user = $request->only(['user', 'password', 'email']);
-            $user['user_type_id'] = 2;
-            $user['password'] = Hash::make($user['password']);
+    //     if (Company::create($input)) {
+    //         $user = $request->only(['user', 'password', 'email']);
+    //         $user['user_type_id'] = 2;
+    //         $user['password'] = Hash::make($user['password']);
 
-            User::create($user);
+    //         User::create($user);
 
-            // queries
-            $company = Company::where('ruc', $input['ruc'])->first();
-            $user = User::where('user', $user['user'])->first();
+    //         // queries
+    //         $company = Company::where('ruc', $input['ruc'])->first();
+    //         $user = User::where('user', $user['user'])->first();
 
-            $user->companyusers()->create([
-                'level' => 'owner',
-                'level_id' => $company->id
-            ]);
+    //         $user->companyusers()->create([
+    //             'level' => 'owner',
+    //             'level_id' => $company->id
+    //         ]);
 
-            return response()->json([
-                'user' => $user
-            ]);
+    //         return response()->json([
+    //             'user' => $user
+    //         ]);
 
-        } else {
-            return response()->json(['message' => 'Errores desconocidos']);
-        }
-    }
+    //     } else {
+    //         return response()->json(['message' => 'Errores desconocidos']);
+    //     }
+    // }
 
     public function downloadSign()
     {
@@ -152,28 +152,28 @@ class CompanyController extends Controller
         }
     }
 
-    public function updateLogo(Request $request)
-    {
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
+    // public function updateLogo(Request $request)
+    // {
+    //     $auth = Auth::user();
+    //     $level = $auth->companyusers->first();
+    //     $company = Company::find($level->level_id);
 
-        // Load logo
-        if ($request->logo !== NULL) {
-            // Load from API
-            $image = $request->file('logo');
-            $imagename = $request->ruc . '.' . $image->getClientOriginalExtension();
+    //     // Load logo
+    //     if ($request->logo !== NULL) {
+    //         // Load from API
+    //         $image = $request->file('logo');
+    //         $imagename = $request->ruc . '.' . $image->getClientOriginalExtension();
 
-            // Si el nombre del logo no es por defecto y existe la imagen eliminar
-            if ($company->logo_dir !== 'default.png') {
-                Storage::delete('app/logos/' . $company->logo_dir);
-            }
+    //         // Si el nombre del logo no es por defecto y existe la imagen eliminar
+    //         if ($company->logo_dir !== 'default.png') {
+    //             Storage::delete('app/logos/' . $company->logo_dir);
+    //         }
 
-            $request->file('logo')->storeAs('logos', $imagename);
+    //         $request->file('logo')->storeAs('logos', $imagename);
 
-            $company->update([
-                'logo_dir' => $imagename
-            ]);
-        }
-    }
+    //         $company->update([
+    //             'logo_dir' => $imagename
+    //         ]);
+    //     }
+    // }
 }
