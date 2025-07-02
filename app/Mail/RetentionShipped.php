@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Http\Controllers\ShopController;
+use App\Models\Provider;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Bus\Queueable;
@@ -46,7 +47,7 @@ class RetentionShipped extends Mailable
 
         return $this->from($auth->email)
             ->subject('RETENCION ' . $this->shop->serie_retencion . ' de ' . $company->company)
-            ->view('mail', ['title' => 'RETENCION ' . $this->shop->serie_retention, 'customer' => $this->shop->provider->name])
+            ->view('mail', ['title' => 'RETENCION ' . $this->shop->serie_retention, 'customer' => Provider::find($this->shop->provider_id)->name])
             ->attachFromStorage(
                 str_replace('.xml', '.pdf', $this->shop->xml_retention),
                 'RETENCION-' . $this->shop->serie_retencion . '.pdf',
