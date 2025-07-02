@@ -46,7 +46,7 @@ class OrderShipped extends Mailable
 
         return $this->from($auth->email)
             ->subject(($this->order->voucher_type == 1 ? 'FACTURA ' : 'NOTA DE CRÉDITO ') . $this->order->serie . ' de ' . $company->company)
-            ->view('mail')
+            ->view('mail', ['title' => 'FACTURA ' . $this->order->serie, 'customer' => $this->order->customer->name])
             ->attachFromStorage(
                 str_replace('.xml', '.pdf', $this->order->xml),
                 ($this->order->voucher_type == 1 ? 'FAC-' : 'NC-') . $this->order->serie . '.pdf',

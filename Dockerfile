@@ -6,9 +6,23 @@ ARG user
 ARG uid
 
 # Install dependencies
-RUN apt-get update && apt-get install -y libxml2-dev zip unzip git curl libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
+RUN apt-get update && apt-get install -y \
+    libxml2-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql soap \
+    && docker-php-ext-install \
+        gd \
+        pdo \
+        pdo_mysql \
+        soap \
+        zip \
     && docker-php-ext-enable soap
 
 # Clear cache

@@ -46,7 +46,7 @@ class RetentionShipped extends Mailable
 
         return $this->from($auth->email)
             ->subject('RETENCION ' . $this->shop->serie_retencion . ' de ' . $company->company)
-            ->view('mail')
+            ->view('mail', ['title' => 'RETENCION ' . $this->shop->serie_retention, 'customer' => $this->shop->provider->name])
             ->attachFromStorage(
                 str_replace('.xml', '.pdf', $this->shop->xml_retention),
                 'RETENCION-' . $this->shop->serie_retencion . '.pdf',

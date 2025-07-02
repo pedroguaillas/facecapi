@@ -52,6 +52,7 @@ services:
 
   nginx:
     image: nginx:alpine
+    container_name: nginx_for_lumen
     ports:
       - 8005:80
     depends_on:
