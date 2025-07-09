@@ -76,16 +76,17 @@ class ShopController extends Controller
             ->orderBy('created_at')->first();
 
         // Inicio ... Validar que se anule la retencion anterior
-        $shop_verfiy = Shop::where([
+
+        $exists = Shop::where([
             ['branch_id', $branch->id],
             ['serie', $request->serie],
             ['state_retencion', 'AUTORIZADO'],
             ['authorization', $request->authorization],
             ['provider_id', $request->provider_id]
-        ])->get();
+        ])->exists();
 
-        if (Count($shop_verfiy)) {
-            return response()->json(['message' => 'RETENTION_EMITIDA'], 405);
+        if ($exists) {
+            return response()->json(['message' => 'RETENTION_EMITIDA'], 422);
         }
         // Fin ... Validar que se anule la retencion anterior
 

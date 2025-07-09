@@ -147,6 +147,10 @@ class OrderController extends Controller
                 }
             }
 
+            // Actualizar secuencia del comprobante
+            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}++;
+            $emisionPoint->save();
+
             // Registro de la Informacion Adicional de la Orden
             $aditionals = $request->get('aditionals');
 
@@ -165,11 +169,8 @@ class OrderController extends Controller
                     $order->orderaditionals()->createMany($array);
                 }
             }
-
-            // Actualizar secuencia del comprobante
-            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}++;
-            $emisionPoint->save();
-
+            
+            // Envio al SRI
             if ($request->get('send')) {
                 (new OrderXmlController())->xml($order->id);
             }
