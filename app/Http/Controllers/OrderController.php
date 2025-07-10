@@ -169,7 +169,7 @@ class OrderController extends Controller
                     $order->orderaditionals()->createMany($array);
                 }
             }
-            
+
             // Envio al SRI
             if ($request->get('send')) {
                 (new OrderXmlController())->xml($order->id);
@@ -384,7 +384,7 @@ class OrderController extends Controller
         if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED)
             return;
 
-        if ($order->update($request->except(['id', 'products', 'send', 'aditionals']))) {
+        if ($order->update($request->except(['id', 'products', 'send', 'aditionals', 'serie']))) {
 
             // Actualizar los Items de la Orden
             $products = $request->get('products');
