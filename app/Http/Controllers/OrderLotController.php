@@ -125,6 +125,7 @@ class OrderLotController extends Controller
                 'customer_id' => $customer[0]->id,
                 'lot_id' => $lot->id,
                 'total' => $subTotal + $iva,
+                'pay_method' => $company->pay_method,
             ];
 
             $input['base' . $product->percentage] = $subTotal;

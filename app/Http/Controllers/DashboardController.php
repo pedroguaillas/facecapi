@@ -65,6 +65,7 @@ class DashboardController extends Controller
             'count_shops' => $count_shops,
             'count_customers' => $count_customers,
             'count_providers' => $count_providers,
+            'cert_expiration' => $company->sign_valid_to,
         ]);
     }
 }
