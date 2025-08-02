@@ -136,7 +136,8 @@ class WSSriOrderController
     {
         $lot = Lot::find($idLot);
 
-        if ($lot->state === VoucherStates::AUTHORIZED || $lot->state === VoucherStates::CANCELED) return;
+        if ($lot->state === VoucherStates::AUTHORIZED || $lot->state === VoucherStates::CANCELED)
+            return;
 
         $environment = substr($lot->authorization, 23, 1);
 
@@ -185,9 +186,16 @@ class WSSriOrderController
     public function authorize($id)
     {
         $order = Order::find($id);
+
+        if (!is_null($order->lot_id) && Lot::find($order->lot_id)) {
+            $this->authorizedLot($order->lot_id);
+            return;
+        }
+
         $environment = substr($order->xml, -30, 1);
 
-        if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED) return;
+        if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED)
+            return;
 
         switch ((int) $environment) {
             case 1:
@@ -338,7 +346,7 @@ class WSSriOrderController
             return;
         }
 
-        if ((int)$response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
+        if ((int) $response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
             $order->state = VoucherStates::CANCELED;
             $order->save();
             return response()->json(['state' => 'OK']);
