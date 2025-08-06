@@ -187,9 +187,20 @@ class WSSriOrderController
     {
         $order = Order::find($id);
 
-        if (!is_null($order->lot_id) && Lot::find($order->lot_id)) {
-            $this->authorizedLot($order->lot_id);
-            return;
+        if (!is_null($order->lot_id)) {
+            $lot = Lot::find($order->lot_id);
+
+            if ($lot->state === VoucherStates::AUTHORIZED || $lot->state === VoucherStates::CANCELED) {
+                return;
+            }
+            if ($lot->state === VoucherStates::SAVED) {
+                $this->sendLote($order->lot_id);
+                return;
+            }
+            if ($lot->state === VoucherStates::SENDED || $lot->state === VoucherStates::RECEIVED) {
+                $this->authorizedLot($order->lot_id);
+                return;
+            }
         }
 
         $environment = substr($order->xml, -30, 1);
@@ -308,6 +319,15 @@ class WSSriOrderController
     public function cancel(int $id)
     {
         $order = Order::find($id);
+
+        // Validar si se puede anular según la nueva ley (hasta el día 7 del mes siguiente)
+        // if (!$order->isCancelable($order->date)) {
+        //     return response()->json([
+        //         'state' => 'EXPIRED',
+        //         'message' => 'La anulación solo es válida dentro del mes de emisión y hasta el día 7 del mes siguiente.'
+        //     ], 422);
+        // }
+
         $environment = substr($order->xml, -30, 1);
 
         if ($order->state !== VoucherStates::AUTHORIZED) {
