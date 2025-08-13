@@ -277,7 +277,8 @@ class ShopController extends Controller
                 'shops.xml_retention AS xml',
                 'shops.authorization_retention AS authorization',
                 'p.name',
-                'p.identication'
+                'p.identication',
+                'p.email',
             )
             ->where('shops.id', $id)
             ->first();

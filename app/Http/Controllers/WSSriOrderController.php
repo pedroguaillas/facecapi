@@ -243,6 +243,8 @@ class WSSriOrderController
 
             $autorizacion = $response->RespuestaAutorizacionComprobante->autorizaciones->autorizacion;
             $this->saveResultAutorization($order, $autorizacion);
+            (new MailController())->orderMail($id);
+
         } catch (\Exception $e) {
             info(' CODE: ' . $e->getCode());
         }

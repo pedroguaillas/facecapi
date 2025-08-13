@@ -233,12 +233,12 @@ class OrderController extends Controller
         ]);
     }
 
-    public function showPdf($id)
+    protected function buildPdf(int $id)
     {
         $movement = Order::join('customers AS c', 'c.id', 'customer_id')
-            ->select('orders.*', 'c.identication', 'c.name', 'c.address')
+            ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
             ->where('orders.id', $id)
-            ->first();
+            ->firstOrFail();
 
         $after = false;
         $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
@@ -252,9 +252,7 @@ class OrderController extends Controller
             ->where('order_id', $id)
             ->get();
 
-        $enabledDiscount = $movement_items->contains(function ($item) {
-            return $item->discount > 0;
-        });
+        $enabledDiscount = $movement_items->contains(fn($item) => $item->discount > 0);
 
         $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
@@ -278,15 +276,101 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
+                $pdf = Pdf::loadView('vouchers/invoice', compact(
+                    'movement',
+                    'company',
+                    'branch',
+                    'movement_items',
+                    'orderaditionals',
+                    'payMethod',
+                    'after',
+                    'enabledDiscount'
+                ));
                 break;
             case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
+                $pdf = PDF::loadView('vouchers/creditnote', compact(
+                    'movement',
+                    'company',
+                    'branch',
+                    'movement_items',
+                    'orderaditionals',
+                    'after',
+                    'enabledDiscount'
+                ));
                 break;
+            default:
+                throw new \Exception("Tipo de comprobante no soportado");
         }
 
+        return [$pdf, $movement];
+    }
+
+    public function generatePdf($id)
+    {
+        [$pdf, $movement] = $this->buildPdf($id);
+        $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
+    }
+
+    public function showPdf($id)
+    {
+        [$pdf] = $this->buildPdf($id);
         return $pdf->stream();
     }
+
+    // public function showPdf($id)
+    // {
+    //     $movement = Order::join('customers AS c', 'c.id', 'customer_id')
+    //         ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
+    //         ->where('orders.id', $id)
+    //         ->first();
+
+    //     $after = false;
+    //     $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
+
+    //     if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+    //         $after = true;
+    //     }
+
+    //     $movement_items = OrderItem::join('products', 'products.id', 'product_id')
+    //         ->select('products.*', 'order_items.*')
+    //         ->where('order_id', $id)
+    //         ->get();
+
+    //     $enabledDiscount = $movement_items->contains(function ($item) {
+    //         return $item->discount > 0;
+    //     });
+
+    //     $orderaditionals = OrderAditional::where('order_id', $id)->get();
+
+    //     $auth = Auth::user();
+    //     $level = $auth->companyusers->first();
+    //     $company = Company::find($level->level_id);
+    //     $company->logo_dir = $company->logo_dir ?: 'default.png';
+
+    //     $branch = Branch::where([
+    //         'company_id' => $company->id,
+    //         'store' => (int) substr($movement->serie, 0, 3),
+    //     ])->get();
+
+    //     if ($branch->count() === 0) {
+    //         $branch = Branch::where('company_id', $company->id)
+    //             ->orderBy('created_at')->first();
+    //     } elseif ($branch->count() === 1) {
+    //         $branch = $branch->first();
+    //     }
+
+    //     switch ($movement->voucher_type) {
+    //         case 1:
+    //             $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
+    //             $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
+    //             break;
+    //         case 4:
+    //             $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
+    //             break;
+    //     }
+
+    //     return $pdf->stream();
+    // }
 
     // PDF tamaño pequeño a imprimir
     public function printfPdf($id)
@@ -322,60 +406,60 @@ class OrderController extends Controller
         return $pdf->stream();
     }
 
-    public function generatePdf($id)
-    {
-        $movement = Order::join('customers AS c', 'c.id', 'customer_id')
-            ->select('orders.*', 'c.identication', 'c.name', 'c.address')
-            ->where('orders.id', $id)
-            ->first();
+    // public function generatePdf($id)
+    // {
+    //     $movement = Order::join('customers AS c', 'c.id', 'customer_id')
+    //         ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
+    //         ->where('orders.id', $id)
+    //         ->first();
 
-        $after = false;
-        $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
+    //     $after = false;
+    //     $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
 
-        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
-            $after = true;
-        }
+    //     if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+    //         $after = true;
+    //     }
 
-        $movement_items = OrderItem::join('products', 'products.id', 'product_id')
-            ->select('products.*', 'order_items.*')
-            ->where('order_id', $id)
-            ->get();
+    //     $movement_items = OrderItem::join('products', 'products.id', 'product_id')
+    //         ->select('products.*', 'order_items.*')
+    //         ->where('order_id', $id)
+    //         ->get();
 
-        $enabledDiscount = $movement_items->contains(function ($item) {
-            return $item->discount > 0;
-        });
+    //     $enabledDiscount = $movement_items->contains(function ($item) {
+    //         return $item->discount > 0;
+    //     });
 
-        $orderaditionals = OrderAditional::where('order_id', $id)->get();
+    //     $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $company->logo_dir = $company->logo_dir ?: 'default.png';
+    //     $auth = Auth::user();
+    //     $level = $auth->companyusers->first();
+    //     $company = Company::find($level->level_id);
+    //     $company->logo_dir = $company->logo_dir ?: 'default.png';
 
-        $branch = Branch::where([
-            'company_id' => $company->id,
-            'store' => (int) substr($movement->serie, 0, 3),
-        ])->get();
+    //     $branch = Branch::where([
+    //         'company_id' => $company->id,
+    //         'store' => (int) substr($movement->serie, 0, 3),
+    //     ])->get();
 
-        if ($branch->count() === 0) {
-            $branch = Branch::where('company_id', $company->id)
-                ->orderBy('created_at')->first();
-        } elseif ($branch->count() === 1) {
-            $branch = $branch->first();
-        }
+    //     if ($branch->count() === 0) {
+    //         $branch = Branch::where('company_id', $company->id)
+    //             ->orderBy('created_at')->first();
+    //     } elseif ($branch->count() === 1) {
+    //         $branch = $branch->first();
+    //     }
 
-        switch ($movement->voucher_type) {
-            case 1:
-                $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
-                break;
-            case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
-                break;
-        }
+    //     switch ($movement->voucher_type) {
+    //         case 1:
+    //             $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
+    //             $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
+    //             break;
+    //         case 4:
+    //             $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
+    //             break;
+    //     }
 
-        $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
-    }
+    //     $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
+    // }
 
     public function update(Request $request, $id)
     {

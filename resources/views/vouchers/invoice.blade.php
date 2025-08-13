@@ -14,6 +14,8 @@
                             <td class="relleno">Fecha de Emisión: {{ date("d/m/Y", strtotime($movement->date)) }}</td>
                             @if($movement->guia)
                                 <td class="align-middle">Guia de Remisión: {{ $movement->guia }}</td>
+                            @elseif($movement->email)
+                                <td class="align-middle">Correo: {{ $movement->email }}</td>
                             @endif
                         </tr>
                         <tr>
@@ -58,7 +60,8 @@
                                 <td style="text-align: right; width: 5em;">{{ number_format($item->discount, 2) }}</td>
                             @endif
                             <td style="text-align: right; width: 5em;">
-                                {{ number_format($item->quantity * $item->price - $item->discount, 2) }}</td>
+                                {{ number_format($item->quantity * $item->price - $item->discount, 2) }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>

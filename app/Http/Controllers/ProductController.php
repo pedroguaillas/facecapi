@@ -265,4 +265,17 @@ class ProductController extends Controller
 
         exit($content);
     }
+
+    public function destroy($id)
+    {
+        $product = Product::findOrFail($id);
+
+        if ($product->orderItems->count() > 0 || $product->referralGuideItems->count() > 0 || $product->shopItems->count() > 0) {
+            Product::destroy($product->id);
+        }
+
+        $product->delete();
+
+        return response()->json(['message' => 'PRODUCT_DELETED']);
+    }
 }

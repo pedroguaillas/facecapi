@@ -146,6 +146,7 @@ class WSSriRetentionController
                     $shop->state_retencion = VoucherStates::REJECTED;
                     $shop->extra_detail_retention = substr($message, 0, 255);
                     $shop->save();
+                    (new MailController())->retentionMail($id);
                     break;
                 default:
                     $shop->state_retencion = VoucherStates::IN_PROCESS;
@@ -227,7 +228,7 @@ class WSSriRetentionController
 
         $response = $soapClientValidation->autorizacionComprobante($user_param);
 
-        if ((int)$response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
+        if ((int) $response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
             $shop->state_retencion = VoucherStates::CANCELED;
             $shop->save();
             return response()->json(['state' => 'OK']);

@@ -62,6 +62,7 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->post('products/import', 'ProductController@import');
     $router->get('products/export', 'ProductController@export');
     $router->post('products/getmasive', 'ProductController@getmasive');
+    $router->delete('products/{id}', 'ProductController@destroy');
 
     //orders
     $router->post('orderlist', 'OrderController@orderlist');
