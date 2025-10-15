@@ -87,6 +87,21 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+        $this->validate($request, [
+            'customer_id' => 'required|integer|exists:customers,id',
+        ], [
+            'customer_id.required' => 'Debe seleccionar un cliente',
+        ]);
+
+        $customer = Customer::find($request->customer_id);
+
+        if ($customer && $customer->identication === '9999999999999' && $request->total > 50) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No es posible una venta mayor a $50 a consumidor final.'
+            ], 422);
+        }
+
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
@@ -317,61 +332,6 @@ class OrderController extends Controller
         return $pdf->stream();
     }
 
-    // public function showPdf($id)
-    // {
-    //     $movement = Order::join('customers AS c', 'c.id', 'customer_id')
-    //         ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
-    //         ->where('orders.id', $id)
-    //         ->first();
-
-    //     $after = false;
-    //     $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
-
-    //     if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
-    //         $after = true;
-    //     }
-
-    //     $movement_items = OrderItem::join('products', 'products.id', 'product_id')
-    //         ->select('products.*', 'order_items.*')
-    //         ->where('order_id', $id)
-    //         ->get();
-
-    //     $enabledDiscount = $movement_items->contains(function ($item) {
-    //         return $item->discount > 0;
-    //     });
-
-    //     $orderaditionals = OrderAditional::where('order_id', $id)->get();
-
-    //     $auth = Auth::user();
-    //     $level = $auth->companyusers->first();
-    //     $company = Company::find($level->level_id);
-    //     $company->logo_dir = $company->logo_dir ?: 'default.png';
-
-    //     $branch = Branch::where([
-    //         'company_id' => $company->id,
-    //         'store' => (int) substr($movement->serie, 0, 3),
-    //     ])->get();
-
-    //     if ($branch->count() === 0) {
-    //         $branch = Branch::where('company_id', $company->id)
-    //             ->orderBy('created_at')->first();
-    //     } elseif ($branch->count() === 1) {
-    //         $branch = $branch->first();
-    //     }
-
-    //     switch ($movement->voucher_type) {
-    //         case 1:
-    //             $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-    //             $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
-    //             break;
-    //         case 4:
-    //             $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
-    //             break;
-    //     }
-
-    //     return $pdf->stream();
-    // }
-
     // PDF tamaño pequeño a imprimir
     public function printfPdf($id)
     {
@@ -405,61 +365,6 @@ class OrderController extends Controller
 
         return $pdf->stream();
     }
-
-    // public function generatePdf($id)
-    // {
-    //     $movement = Order::join('customers AS c', 'c.id', 'customer_id')
-    //         ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
-    //         ->where('orders.id', $id)
-    //         ->first();
-
-    //     $after = false;
-    //     $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
-
-    //     if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
-    //         $after = true;
-    //     }
-
-    //     $movement_items = OrderItem::join('products', 'products.id', 'product_id')
-    //         ->select('products.*', 'order_items.*')
-    //         ->where('order_id', $id)
-    //         ->get();
-
-    //     $enabledDiscount = $movement_items->contains(function ($item) {
-    //         return $item->discount > 0;
-    //     });
-
-    //     $orderaditionals = OrderAditional::where('order_id', $id)->get();
-
-    //     $auth = Auth::user();
-    //     $level = $auth->companyusers->first();
-    //     $company = Company::find($level->level_id);
-    //     $company->logo_dir = $company->logo_dir ?: 'default.png';
-
-    //     $branch = Branch::where([
-    //         'company_id' => $company->id,
-    //         'store' => (int) substr($movement->serie, 0, 3),
-    //     ])->get();
-
-    //     if ($branch->count() === 0) {
-    //         $branch = Branch::where('company_id', $company->id)
-    //             ->orderBy('created_at')->first();
-    //     } elseif ($branch->count() === 1) {
-    //         $branch = $branch->first();
-    //     }
-
-    //     switch ($movement->voucher_type) {
-    //         case 1:
-    //             $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-    //             $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
-    //             break;
-    //         case 4:
-    //             $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
-    //             break;
-    //     }
-
-    //     $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
-    // }
 
     public function update(Request $request, $id)
     {

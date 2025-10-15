@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Http\JsonResponse;
 
 class ShopController extends Controller
 {
@@ -85,8 +86,18 @@ class ShopController extends Controller
             ['provider_id', $request->provider_id]
         ])->exists();
 
+        // if ($exists) {
+        //     return response()->json(['message' => 'RETENTION_EMITIDA'], 422);
+        // }
+
         if ($exists) {
-            return response()->json(['message' => 'RETENTION_EMITIDA'], 422);
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Ya existe una retención autorizada con esos datos.',
+                'errors' => [
+                    'authorization' => 'Ya existe una retención AUTORIZADA para esta factura'
+                ]
+            ], 422);
         }
         // Fin ... Validar que se anule la retencion anterior
 
@@ -183,6 +194,12 @@ class ShopController extends Controller
                 (new RetentionXmlController())->xml($shop->id);
             }
         }
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Retención creada con éxito.',
+            'data' => $shop
+        ], 201);
     }
 
     public function show($id)
