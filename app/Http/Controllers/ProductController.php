@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -74,23 +75,29 @@ class ProductController extends Controller
         $branch = Branch::where('company_id', $company->id)
             ->orderBy('created_at')->first();
 
-        try {
-            $product = $branch->products()->create($request->all());
-            if ($company->inventory && $request->has('stock')) {
-                $product->inventories()->create([
-                    'quantity' => $request->stock,
-                    'price' => $request->price1,
-                    'type' => 'Inventario inicial',
-                    'code_provider' => null,
-                    'date' => substr(Carbon::today()->toISOString(), 0, 10)
-                ]);
-            }
-        } catch (\Illuminate\Database\QueryException $e) {
-            $errorCode = $e->errorInfo[1];
-            if ($errorCode == 1062) {
-                return response()->json(['message' => 'KEY_DUPLICATE']);
-            }
-        }
+        $this->validate($request, [
+            'code' => [
+                'required',
+                Rule::unique('products')->where(function ($query) use ($branch) {
+                    return $query->where('branch_id', $branch->id);
+                }),
+            ],
+        ], [
+            'code.required' => 'El código es obligatorio',
+            'code.unique' => 'Ya existe un producto con el código ' . $request->code . ' prueba',
+        ]);
+
+        $branch->products()->create($request->all());
+        
+        // if ($company->inventory && $request->has('stock')) {
+        //     $product->inventories()->create([
+        //         'quantity' => $request->stock,
+        //         'price' => $request->price1,
+        //         'type' => 'Inventario inicial',
+        //         'code_provider' => null,
+        //         'date' => substr(Carbon::today()->toISOString(), 0, 10)
+        //     ]);
+        // }
     }
 
     public function import(Request $request)
