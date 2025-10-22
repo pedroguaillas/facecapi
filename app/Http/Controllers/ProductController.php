@@ -10,7 +10,6 @@ use App\Models\Company;
 use App\Models\IceCataloge;
 use App\Models\IvaTax;
 use App\Models\Product;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -84,10 +83,15 @@ class ProductController extends Controller
             ],
         ], [
             'code.required' => 'El código es obligatorio',
-            'code.unique' => 'Ya existe un producto con el código ' . $request->code . ' prueba',
+            'code.unique' => 'Ya existe un producto con el código ' . $request->code,
         ]);
 
-        $branch->products()->create($request->all());
+        $product = $branch->products()->create($request->all());
+
+        return response()->json([
+            'message' => 'Producto creado correctamente.',
+            'product' => $product,
+        ], 201);
         
         // if ($company->inventory && $request->has('stock')) {
         //     $product->inventories()->create([
@@ -213,16 +217,31 @@ class ProductController extends Controller
 
     public function update(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
+        $auth = Auth::user();
+        $level = $auth->companyusers->first();
+        $company = Company::find($level->level_id);
+        $branch = Branch::where('company_id', $company->id)
+            ->orderBy('created_at')->first();
 
-        try {
-            $product->update($request->all());
-        } catch (\Illuminate\Database\QueryException $e) {
-            $errorCode = $e->errorInfo[1];
-            if ($errorCode == 1062) {
-                return response()->json(['message' => 'KEY_DUPLICATE']);
-            }
-        }
+        $this->validate($request, [
+            'code' => [
+                'required',
+                Rule::unique('products')
+                ->ignore($id) // 👈 Ignorar el producto actual
+                ->where(function ($query) use ($branch) {
+                    return $query->where('branch_id', $branch->id);
+                }),
+            ],
+        ], [
+            'code.required' => 'El código es obligatorio',
+            'code.unique' => 'Ya existe un producto con el código ' . $request->code,
+        ]);
+
+        $product = Product::findOrFail($id);
+        
+        $product->update($request->all());
+
+        return response()->json(['product' => $product]);
     }
 
     public function export()

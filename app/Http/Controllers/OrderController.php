@@ -22,6 +22,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
 {
@@ -97,8 +98,7 @@ class OrderController extends Controller
 
         if ($customer && $customer->identication === '9999999999999' && $request->total > 50) {
             return response()->json([
-                'success' => false,
-                'message' => 'No es posible una venta mayor a $50 a consumidor final.'
+                'customer_id' => ['No es posible una venta mayor a $50 a consumidor final.']
             ], 422);
         }
 
@@ -190,6 +190,11 @@ class OrderController extends Controller
                 (new OrderXmlController())->xml($order->id);
             }
         }
+
+        return new JsonResponse([
+            'message' => 'Venta creada con éxito.',
+            'data' => $order
+        ], 201);
     }
 
     public function show($id)
@@ -291,27 +296,16 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $pdf = Pdf::loadView('vouchers/invoice', compact(
-                    'movement',
-                    'company',
-                    'branch',
-                    'movement_items',
-                    'orderaditionals',
-                    'payMethod',
-                    'after',
-                    'enabledDiscount'
-                ));
+                $pdf = Pdf::loadView(
+                    'vouchers/invoice', 
+                    compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod')
+                );
                 break;
             case 4:
-                $pdf = PDF::loadView('vouchers/creditnote', compact(
-                    'movement',
-                    'company',
-                    'branch',
-                    'movement_items',
-                    'orderaditionals',
-                    'after',
-                    'enabledDiscount'
-                ));
+                $pdf = Pdf::loadView(
+                    'vouchers/creditnote', 
+                    compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount')
+                );
                 break;
             default:
                 throw new \Exception("Tipo de comprobante no soportado");

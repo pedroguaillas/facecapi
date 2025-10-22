@@ -86,19 +86,12 @@ class ShopController extends Controller
             ['provider_id', $request->provider_id]
         ])->exists();
 
-        // if ($exists) {
-        //     return response()->json(['message' => 'RETENTION_EMITIDA'], 422);
-        // }
-
         if ($exists) {
             return new JsonResponse([
-                'success' => false,
-                'message' => 'Ya existe una retención autorizada con esos datos.',
-                'errors' => [
-                    'authorization' => 'Ya existe una retención AUTORIZADA para esta factura'
-                ]
+                'authorization' => ['Ya existe una retención AUTORIZADA para esta factura']
             ], 422);
         }
+
         // Fin ... Validar que se anule la retencion anterior
 
         $except = ['taxes', 'pay_methods', 'app_retention', 'send', 'point_id'];
@@ -196,7 +189,6 @@ class ShopController extends Controller
         }
 
         return new JsonResponse([
-            'success' => true,
             'message' => 'Retención creada con éxito.',
             'data' => $shop
         ], 201);
@@ -280,7 +272,7 @@ class ShopController extends Controller
         return $pdf->stream();
     }
 
-    public function showPdfRetention($id)
+    private function buildPdfRetention(int $id)
     {
         $movement = Shop::join('providers AS p', 'provider_id', 'p.id')
             ->select(
@@ -324,53 +316,18 @@ class ShopController extends Controller
 
         $pdf = PDF::loadView('vouchers/retention', compact('movement', 'company', 'branch', 'retention_items', 'comprobante'));
 
+        return [$pdf, $movement];
+    }
+
+    public function showPdfRetention($id)
+    {
+        [$pdf] = $this->buildPdfRetention($id);
         return $pdf->stream();
     }
 
     public function generatePdfRetention($id)
     {
-        $movement = Shop::join('providers AS p', 'provider_id', 'p.id')
-            ->select(
-                'shops.id',
-                'shops.date AS date_v',
-                'shops.voucher_type AS voucher_type_v',
-                'shops.date_retention AS date',
-                'shops.serie AS serie_retencion',
-                'shops.serie_retencion AS serie',
-                'shops.autorized_retention AS autorized',
-                'shops.xml_retention AS xml',
-                'shops.authorization_retention AS authorization',
-                'p.name',
-                'p.identication'
-            )
-            ->where('shops.id', $id)
-            ->first();
-
-        $movement->voucher_type = 7;
-
-        $retention_items = $movement->shopretentionitems;
-
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $company->logo_dir = $company->logo_dir ?: 'default.png';
-
-        $branch = Branch::where([
-            'company_id' => $company->id,
-            'store' => (int) substr($movement->serie, 0, 3),
-        ])->get();
-
-        if ($branch->count() === 0) {
-            $branch = Branch::where('company_id', $company->id)
-                ->orderBy('created_at')->first();
-        } elseif ($branch->count() === 1) {
-            $branch = $branch->first();
-        }
-
-        $comprobante = $this->voucherType($movement->voucher_type_v);
-
-        $pdf = PDF::loadView('vouchers/retention', compact('movement', 'company', 'branch', 'retention_items', 'comprobante'));
-
+        [$pdf, $movement] = $this->buildPdfRetention($id);
         $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
     }
 
@@ -392,8 +349,12 @@ class ShopController extends Controller
     {
         $shop = Shop::find($id);
 
-        if ($shop->state === VoucherStates::AUTHORIZED || $shop->state_retencion === VoucherStates::AUTHORIZED)
-            return;
+        if ($shop->state === VoucherStates::AUTHORIZED || $shop->state_retencion === VoucherStates::AUTHORIZED){
+            return new JsonResponse([
+                'message' => 'Retención modificada con éxito.',
+                'data' => $shop
+            ], 409);
+        }
 
         $except = ['id', 'taxes', 'pay_methods', 'app_retention', 'send'];
 
@@ -423,6 +384,11 @@ class ShopController extends Controller
                 }
             }
         }
+
+        return new JsonResponse([
+            'message' => 'Retención modificada con éxito.',
+            'data' => $shop
+        ], 201);
     }
 
     public function export($month)

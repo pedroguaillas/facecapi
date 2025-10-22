@@ -243,24 +243,23 @@ class WSSriOrderController
 
             $autorizacion = $response->RespuestaAutorizacionComprobante->autorizaciones->autorizacion;
             $this->saveResultAutorization($order, $autorizacion);
-            (new MailController())->orderMail($id);
-
+            
         } catch (\Exception $e) {
             info(' CODE: ' . $e->getCode());
         }
     }
-
+    
     private function saveResultAutorization($order, $autorizacion)
     {
         switch ($autorizacion->estado) {
             case VoucherStates::AUTHORIZED:
                 $toPath = str_replace(VoucherStates::SIGNED, VoucherStates::AUTHORIZED, $order->xml);
                 $folder = substr($toPath, 0, strpos($toPath, VoucherStates::AUTHORIZED)) . VoucherStates::AUTHORIZED;
-
+                
                 if (!file_exists(Storage::path($folder))) {
                     Storage::makeDirectory($folder);
                 }
-
+                
                 Storage::put($toPath, $this->xmlautorized($autorizacion));
                 // Elimina el archivo FIRMADO
                 Storage::delete($order->xml);
@@ -268,6 +267,9 @@ class WSSriOrderController
                 $order->state = VoucherStates::AUTHORIZED;
                 $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);
                 $order->autorized = $authorizationDate->format('Y-m-d H:i:s');
+                $order->save();
+                
+                (new MailController())->orderMail($order->id);
                 break;
             case VoucherStates::REJECTED:
                 $mensajes = json_decode(json_encode($autorizacion->mensajes), true);
@@ -279,12 +281,13 @@ class WSSriOrderController
 
                 $order->state = VoucherStates::REJECTED;
                 $order->extra_detail = substr($message, 0, 255);
+                $order->save();
                 break;
             default:
                 $order->state = VoucherStates::IN_PROCESS;
+                $order->save();
                 break;
         }
-        $order->save();
     }
 
     private function xmlautorized($comprobante)
