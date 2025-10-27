@@ -116,11 +116,12 @@ class RetentionXmlController extends Controller
         $string .= '<comprobanteRetencion id="comprobante" version="2.0.0">';
 
         $string .= $this->infoTributaria($company, $shop);
+        
+        $date = new \DateTime($shop->date);
 
         $string .= '<infoCompRetencion>';
 
-        $date = new \DateTime($shop->date_retention);
-        $string .= '<fechaEmision>' . $date->format('d/m/Y') . '</fechaEmision>';
+        $string .= '<fechaEmision>' . (new \DateTime($shop->date_retention))->format('d/m/Y') . '</fechaEmision>';
         $string .= '<obligadoContabilidad>' . ($company->accounting ? 'SI' : 'NO') . '</obligadoContabilidad>';
         $string .= "<tipoIdentificacionSujetoRetenido>$typeId</tipoIdentificacionSujetoRetenido>";
         $string .= $typeId === 'pasaporte' ? '<tipoSujetoRetenido>01</tipoSujetoRetenido>' : null;
@@ -139,7 +140,7 @@ class RetentionXmlController extends Controller
         // 01 Factura, 02 Nota de Venta, 03 Liquidacion en compra
         $string .= "<codDocSustento>" . str_pad($shop->voucher_type, 2, '0', STR_PAD_LEFT) . "</codDocSustento>";
         $string .= "<numDocSustento>" . str_replace('-', '', $shop->serie) . "</numDocSustento>";
-        $string .= "<fechaEmisionDocSustento>" . (new \DateTime($shop->date))->format('d/m/Y') . "</fechaEmisionDocSustento>";
+        $string .= "<fechaEmisionDocSustento>" . $date->format('d/m/Y') . "</fechaEmisionDocSustento>";
         $string .= "<pagoLocExt>01</pagoLocExt>";
         $string .= "<totalSinImpuestos>0.00</totalSinImpuestos>";
         $string .= "<importeTotal>$shop->total</importeTotal>";
