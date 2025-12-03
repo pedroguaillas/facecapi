@@ -20,7 +20,7 @@ class OrderStoreService
      */
     public function createOrder(array $data): Order
     {
-        $order = DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data) {
             $customer = Customer::find($data['customer_id']);
             $this->validateFinalConsumer($customer, $data['total']);
 
@@ -36,14 +36,12 @@ class OrderStoreService
             $this->createRepayments($order, $data['repayments'] ?? []);
             $this->createOrderAditionals($order, $data['aditionals'] ?? []);
 
+            if ($data['send'] ?? false) {
+                $this->sendToSRI($order->id);
+            }
+
             return $order;
         });
-
-        if ($data['send'] ?? false) {
-            $this->sendToSRI($order->id);
-        }
-
-        return $order;
     }
 
     /**
@@ -181,7 +179,7 @@ class OrderStoreService
                 }
 
                 $newRepayment = $order->repayments()->create([
-                    'type_id_prov' => 4, // Asume que tiene RUC
+                    'type_id_prov' => 1, // Asume que tiene RUC
                     'identification' => $repayment['identification'],
                     'cod_country' => 593, // Ecuador
                     'type_prov' => $type_prov,
