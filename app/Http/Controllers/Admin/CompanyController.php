@@ -55,6 +55,19 @@ class CompanyController extends Controller
         ]);
     }
 
+    public function edit(int $id)
+    {
+        $company = Company::findOrFail($id);
+        return response()->json($company);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $company = Company::findOrFail($id);
+        $company->update($request->all());
+        return response()->json($company);
+    }
+
     public function searchByRuc(string $identification)
     {
         $response = Http::get('https://srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/Persona/obtenerPorTipoIdentificacion', [

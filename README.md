@@ -16,8 +16,11 @@ Copiar y pegar la key a APP_KEY
 `FLUSH PRIVILEGES;`
 
 ## Importa db en Docker
-`docker exec -i mysql_db mysql -u lumen_user -plumen_password lumen_db < /Users/peterdev/Documents/Restore/facecdb.sql`
+`docker exec -i mysql_db mysql -u lumen_user -plumen_password lumen_db < /Users/peterdev/Documents/Restore/facecdb.sql;`
 
 ## Revocar los permisos
 `REVOKE SUPER ON *.* FROM 'lumen_user'@'%';`
 `FLUSH PRIVILEGES;`
+
+## Ejecutar migraciones
+`docker exec lumen_app php artisan migrate`

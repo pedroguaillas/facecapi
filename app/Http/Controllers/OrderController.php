@@ -2,19 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Company;
-use App\Models\Customer;
-use App\Http\Resources\CustomerResources;
-use App\Http\Resources\OrderResources;
-use App\Http\Resources\ProductResources;
-use App\Models\Branch;
-use App\Models\EmisionPoint;
-use App\Models\MethodOfPayment;
+use App\Models\{Company, Customer, Branch, MethodOfPayment, Order, OrderAditional, OrderItem, Product, Repayment};
+use App\Http\Resources\{CustomerResources, OrderResources, ProductResources};
 use Illuminate\Http\Request;
-use App\Models\Order;
-use App\Models\OrderAditional;
-use App\Models\OrderItem;
-use App\Models\Product;
 use App\StaticClasses\VoucherStates;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -23,9 +13,17 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Http\JsonResponse;
+use App\Services\OrderStoreService;
 
 class OrderController extends Controller
 {
+    protected $orderStoreService;
+
+    public function __construct(OrderStoreService $orderStoreService)
+    {
+        $this->orderStoreService = $orderStoreService;
+    }
+    
     public function orderlist(Request $request)
     {
         $auth = Auth::user();
@@ -83,6 +81,7 @@ class OrderController extends Controller
             'methodOfPayments' => MethodOfPayment::whereNotIN('code', ['15', '17', '18', '21'])->get(),
             'pay_method' => $company->pay_method,
             'tourism' => $tourism,
+            'repayment' => $company->repayment,
         ]);
     }
 
@@ -90,112 +89,136 @@ class OrderController extends Controller
     {
         $this->validate($request, [
             'customer_id' => 'required|integer|exists:customers,id',
+            'total' => 'required|numeric',
+            'voucher_type' => 'required|integer|in:1,2',
+            'point_id' => 'required|integer|exists:emision_points,id',
         ], [
             'customer_id.required' => 'Debe seleccionar un cliente',
         ]);
 
-        $customer = Customer::find($request->customer_id);
+        try {
+            $order = $this->orderStoreService->createOrder($request->all());
 
-        if ($customer && $customer->identication === '9999999999999' && $request->total > 50) {
+            return new JsonResponse([
+                'message' => 'Venta creada con éxito.',
+                'data' => $order
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
-                'customer_id' => ['No es posible una venta mayor a $50 a consumidor final.']
+                'message' => $e->getMessage()
             ], 422);
         }
-
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $branch = Branch::where('company_id', $company->id)
-            ->orderBy('created_at')->first();
-
-        $input = $request->except(['products', 'send', 'aditionals', 'point_id']);
-
-        if (array_key_exists("guia", $input) && trim($input['guia']) === '') {
-            $input['guia'] = null;
-        }
-
-        // Extraer la serie RECIVIDA en este formato 001-001-
-        $serie = substr($request->serie, 0, 8);
-        $emisionPoint = EmisionPoint::find($request->point_id);
-        // Evitar secuencía duplicada
-        $serie .= str_pad($emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}, 9, "0", STR_PAD_LEFT);
-        // Modifica la nueva serie
-        $input = [...$input, 'serie' => $serie];
-
-        if ($order = $branch->orders()->create($input)) {
-
-            // Registro de los Items de la Orden
-            $products = $request->get('products');
-
-            if (count($products) > 0) {
-                $array = [];
-
-                // Si tiene habilitado inventario
-                $array_inventory = [];
-
-                foreach ($products as $product) {
-                    $array[] = [
-                        'product_id' => $product['product_id'],
-                        'quantity' => $product['quantity'],
-                        'price' => $product['price'],
-                        'discount' => $product['discount'],
-                        'ice' => $product['ice'] ?? 0,
-                        'iva' => $product['iva'],
-                    ];
-
-                    // Si tiene habilitado inventario
-                    if ($company->inventory) {
-                        $array_inventory[] = [
-                            'product_id' => $product['product_id'],
-                            'quantity' => $product['quantity'],
-                            'price' => $product['price'],
-                            'type' => 'Venta',
-                            'date' => substr(Carbon::today()->toISOString(), 0, 10)
-                        ];
-                    }
-                }
-                $order->orderitems()->createMany($array);
-
-                // Si tiene habilitado inventario
-                if ($company->inventory) {
-                    $order->inventories()->createMany($array_inventory);
-                }
-            }
-
-            // Actualizar secuencia del comprobante
-            $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}++;
-            $emisionPoint->save();
-
-            // Registro de la Informacion Adicional de la Orden
-            $aditionals = $request->get('aditionals');
-
-            if (count($aditionals) > 0) {
-                $array = [];
-                foreach ($aditionals as $aditional) {
-                    if (($aditional['name'] !== null && $aditional['name'] !== '') && ($aditional['description'] !== null && $aditional['description'] !== '')) {
-                        $array[] = [
-                            'name' => $aditional['name'],
-                            'description' => $aditional['description']
-                        ];
-                    }
-                }
-
-                if (count($array)) {
-                    $order->orderaditionals()->createMany($array);
-                }
-            }
-
-            // Envio al SRI
-            if ($request->get('send')) {
-                (new OrderXmlController())->xml($order->id);
-            }
-        }
-
-        return new JsonResponse([
-            'message' => 'Venta creada con éxito.',
-            'data' => $order
-        ], 201);
     }
+    // public function store(Request $request)
+    // {
+    //     $this->validate($request, [
+    //         'customer_id' => 'required|integer|exists:customers,id',
+    //     ], [
+    //         'customer_id.required' => 'Debe seleccionar un cliente',
+    //     ]);
+
+    //     $customer = Customer::find($request->customer_id);
+
+    //     if ($customer && $customer->identication === '9999999999999' && $request->total > 50) {
+    //         return response()->json([
+    //             'customer_id' => ['No es posible una venta mayor a $50 a consumidor final.']
+    //         ], 422);
+    //     }
+
+    //     $auth = Auth::user();
+    //     $level = $auth->companyusers->first();
+    //     $company = Company::find($level->level_id);
+    //     $branch = Branch::where('company_id', $company->id)
+    //         ->orderBy('created_at')->first();
+
+    //     $input = $request->except(['products', 'send', 'aditionals', 'point_id']);
+
+    //     if (array_key_exists("guia", $input) && trim($input['guia']) === '') {
+    //         $input['guia'] = null;
+    //     }
+
+    //     // Extraer la serie RECIVIDA en este formato 001-001-
+    //     $serie = substr($request->serie, 0, 8);
+    //     $emisionPoint = EmisionPoint::find($request->point_id);
+    //     // Evitar secuencía duplicada
+    //     $serie .= str_pad($emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}, 9, "0", STR_PAD_LEFT);
+    //     // Modifica la nueva serie
+    //     $input = [...$input, 'serie' => $serie];
+
+    //     if ($order = $branch->orders()->create($input)) {
+
+    //         // Registro de los Items de la Orden
+    //         $products = $request->get('products');
+
+    //         if (count($products) > 0) {
+    //             $array = [];
+
+    //             // Si tiene habilitado inventario
+    //             $array_inventory = [];
+
+    //             foreach ($products as $product) {
+    //                 $array[] = [
+    //                     'product_id' => $product['product_id'],
+    //                     'quantity' => $product['quantity'],
+    //                     'price' => $product['price'],
+    //                     'discount' => $product['discount'],
+    //                     'ice' => $product['ice'] ?? 0,
+    //                     'iva' => $product['iva'],
+    //                 ];
+
+    //                 // Si tiene habilitado inventario
+    //                 if ($company->inventory) {
+    //                     $array_inventory[] = [
+    //                         'product_id' => $product['product_id'],
+    //                         'quantity' => $product['quantity'],
+    //                         'price' => $product['price'],
+    //                         'type' => 'Venta',
+    //                         'date' => substr(Carbon::today()->toISOString(), 0, 10)
+    //                     ];
+    //                 }
+    //             }
+    //             $order->orderitems()->createMany($array);
+
+    //             // Si tiene habilitado inventario
+    //             if ($company->inventory) {
+    //                 $order->inventories()->createMany($array_inventory);
+    //             }
+    //         }
+
+    //         // Actualizar secuencia del comprobante
+    //         $emisionPoint->{$request->voucher_type == 1 ? 'invoice' : 'creditnote'}++;
+    //         $emisionPoint->save();
+
+    //         // Registro de la Informacion Adicional de la Orden
+    //         $aditionals = $request->get('aditionals');
+
+    //         if (count($aditionals) > 0) {
+    //             $array = [];
+    //             foreach ($aditionals as $aditional) {
+    //                 if (($aditional['name'] !== null && $aditional['name'] !== '') && ($aditional['description'] !== null && $aditional['description'] !== '')) {
+    //                     $array[] = [
+    //                         'name' => $aditional['name'],
+    //                         'description' => $aditional['description']
+    //                     ];
+    //                 }
+    //             }
+
+    //             if (count($array)) {
+    //                 $order->orderaditionals()->createMany($array);
+    //             }
+    //         }
+
+    //         // Envio al SRI
+    //         if ($request->get('send')) {
+    //             (new OrderXmlController())->xml($order->id);
+    //         }
+    //     }
+
+    //     return new JsonResponse([
+    //         'message' => 'Venta creada con éxito.',
+    //         'data' => $order
+    //     ], 201);
+    // }
 
     public function show($id)
     {
@@ -296,9 +319,15 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
+                $repayments = Repayment::selectRaw('identification, sequential, date, SUM(base) AS base, SUM(iva) AS iva')
+                    ->join('repayment_taxes AS rt', 'repayments.id', 'repayment_id')
+                    ->groupBy('identification', 'sequential', 'date')
+                    ->where('order_id', $id)
+                    ->get();
+
                 $pdf = Pdf::loadView(
                     'vouchers/invoice', 
-                    compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod')
+                    compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod', 'repayments')
                 );
                 break;
             case 4:
@@ -367,7 +396,10 @@ class OrderController extends Controller
         if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED)
             return;
 
-        if ($order->update($request->except(['id', 'products', 'send', 'aditionals', 'serie']))) {
+        if ($order->update([
+            ...$request->except(['id', 'products', 'send', 'aditionals', 'serie']), 
+            'state' => VoucherStates::SAVED
+            ])) {
 
             // Actualizar los Items de la Orden
             $products = $request->get('products');

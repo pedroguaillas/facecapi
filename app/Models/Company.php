@@ -46,6 +46,10 @@ class Company extends Model
         'guia_in_invoice',      // Mostrar guia de remision al crear factura
         'import_in_invoice',    // Importar excel con la lista de productos para crear factura
         'import_in_invoices',    // Importar excel en ventas factura
+
+        // Transport
+        'transport',
+        'repayment',
     ];
 
     protected $casts = [
@@ -64,6 +68,10 @@ class Company extends Model
         'guia_in_invoice' => 'boolean',
         'import_in_invoice' => 'boolean',
         'import_in_invoices' => 'boolean',
+
+        // Transport
+        'transport' => 'boolean',
+        'repayment' => 'boolean',
     ];
 
     public function branches()

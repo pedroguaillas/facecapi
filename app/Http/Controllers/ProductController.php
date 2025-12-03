@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ProductResources;
 use App\Models\Branch;
+use App\Models\SriCategory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Company;
@@ -49,21 +50,48 @@ class ProductController extends Controller
 
     public function create()
     {
+        return response()->json([
+            ...$this->buildCreateOrEdit()
+        ]);
+    }
+
+    private function buildCreateOrEdit(){
         $auth = Auth::user();
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        $taxes = IvaTax::where('state', 'active');
+        $taxes = IvaTax::selectRaw("code AS value, CONCAT(percentage, '%') AS label")
+        ->where('state', 'active');
 
         // Si compania no tiene habilitado IVA 5% desabilitar
         if (!$company->base5) {
             $taxes->where('code', '<>', 5);
         }
 
-        return response()->json([
+        $sriCategories = null;
+
+        $types = [];
+
+        if ($company->transport) {
+            $types[] = 'transporte';
+        }
+
+        if ($company->base5) {
+            $types[] = 'ferreteria';
+        }
+
+        if (!empty($types)) {
+            $sriCategories = SriCategory::select('code', 'description', 'type')
+                ->whereIn('type', $types)
+                ->get();
+        }
+
+        return [
             'ivaTaxes' => $taxes->get(),
-            'iceCataloges' => $company->ice ? IceCataloge::all() : [],
-        ]);
+            'iceCataloges' => $company->ice ? IceCataloge::select('code AS value','description AS label')->get() : [],
+            'sriCategories' => $sriCategories ?: [],
+            'transport' => $company->transport,
+        ];
     }
 
     public function store(Request $request)
@@ -193,20 +221,9 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-
-        $taxes = IvaTax::where('state', 'active');
-
-        // Si compania no tiene habilitado IVA 5% desabilitar
-        if (!$company->base5) {
-            $taxes->where('code', '<>', 5);
-        }
         return response()->json([
+            ...$this->buildCreateOrEdit(),
             'product' => Product::find($id),
-            'ivaTaxes' => $taxes->get(),
-            'iceCataloges' => $company->ice ? IceCataloge::all() : [],
         ]);
     }
 

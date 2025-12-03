@@ -26,6 +26,8 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->get('admin/companies', 'Admin\CompanyController@index');
     $router->get('admin/companies/sri/{identification}', 'Admin\CompanyController@searchByRuc');
     $router->post('admin/companies', 'Admin\CompanyController@store');
+    $router->get('admin/companies/{id}/edit', 'Admin\CompanyController@edit');
+    $router->put('admin/companies/{id}', 'Admin\CompanyController@update');
 
     // me
     $router->get('me', 'AuthController@me');
