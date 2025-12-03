@@ -92,9 +92,16 @@ class ReferralGuideController extends Controller
                 $referralguide->referralguidetems()->createMany($array);
             }
 
+<<<<<<< HEAD
+                // Actualizar secuencia del comprobante
+                $emisionPoint = EmisionPoint::find($request->point_id);
+                $emisionPoint->referralguide = (int) substr($request->serie, 8) + 1;
+                $emisionPoint->save();
+=======
             // Actualizar secuencia del comprobante
             $emisionPoint->referralguide++;
             $emisionPoint->save();
+>>>>>>> main
 
             if ($request->get('send')) {
                 (new ReferralGuideXmlController())->xml($referralguide->id);

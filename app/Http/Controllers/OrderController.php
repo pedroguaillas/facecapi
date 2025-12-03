@@ -295,7 +295,13 @@ class OrderController extends Controller
             ->where('order_id', $id)
             ->get();
 
+<<<<<<< HEAD
+        $enabledDiscount = $movement_items->contains(function ($item) {
+            return $item->discount > 0;
+        });
+=======
         $enabledDiscount = $movement_items->contains(fn($item) => $item->discount > 0);
+>>>>>>> main
 
         $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
@@ -319,6 +325,12 @@ class OrderController extends Controller
         switch ($movement->voucher_type) {
             case 1:
                 $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
+<<<<<<< HEAD
+                $pdf = Pdf::loadView('vouchers/invoice', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'payMethod', 'after', 'enabledDiscount'));
+                break;
+            case 4:
+                $pdf = PDF::loadView('vouchers/creditnote', compact('movement', 'company', 'branch', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount'));
+=======
                 $repayments = Repayment::selectRaw('identification, sequential, date, SUM(base) AS base, SUM(iva) AS iva')
                     ->join('repayment_taxes AS rt', 'repayments.id', 'repayment_id')
                     ->groupBy('identification', 'sequential', 'date')
@@ -335,6 +347,7 @@ class OrderController extends Controller
                     'vouchers/creditnote', 
                     compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount')
                 );
+>>>>>>> main
                 break;
             default:
                 throw new \Exception("Tipo de comprobante no soportado");

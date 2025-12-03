@@ -7,8 +7,11 @@ use App\Traits\CanBeCanceled;
 
 class Order extends Model
 {
+<<<<<<< HEAD
+=======
     use CanBeCanceled;
 
+>>>>>>> main
     protected $fillable = [
         'branch_id', 'date',
         'description', 'sub_total',

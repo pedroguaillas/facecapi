@@ -14,8 +14,11 @@
                             <td class="relleno">Fecha de Emisión: {{ date("d/m/Y", strtotime($movement->date)) }}</td>
                             @if($movement->guia)
                                 <td class="align-middle">Guia de Remisión: {{ $movement->guia }}</td>
+<<<<<<< HEAD
+=======
                             @elseif($movement->email)
                                 <td class="align-middle">Correo: {{ $movement->email }}</td>
+>>>>>>> main
                             @endif
                         </tr>
                         <tr>
@@ -60,8 +63,12 @@
                                 <td style="text-align: right; width: 5em;">{{ number_format($item->discount, 2) }}</td>
                             @endif
                             <td style="text-align: right; width: 5em;">
+<<<<<<< HEAD
+                                {{ number_format($item->quantity * $item->price - $item->discount, 2) }}</td>
+=======
                                 {{ number_format($item->quantity * $item->price - $item->discount, 2) }}
                             </td>
+>>>>>>> main
                         </tr>
                     </tbody>
                 </table>
@@ -81,6 +88,8 @@
             </tr>
         </tbody>
     </table>
+<<<<<<< HEAD
+=======
 
     @if($repayments->count() > 0)
         <table style="width: 100%; border-radius: 10px; margin-top: .5em;" class="table-collapse">
@@ -111,4 +120,5 @@
             </tbody>
         </table>
     @endif
+>>>>>>> main
 @endsection
