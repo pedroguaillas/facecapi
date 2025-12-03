@@ -40,18 +40,15 @@ class WSSriRetentionController
             $result = new \stdClass();
             $result = $soapClientReceipt->validarComprobante($paramenters);
 
-            // Verificar si la peticion llego al SRI sino abandonar el proceso
             if (!property_exists($result, 'RespuestaRecepcionComprobante')) {
                 return;
             }
 
-            // $this->moveXmlFile($shop, VoucherStates::SENDED);
             $shop->state_retencion = VoucherStates::SENDED;
             $shop->save();
 
             switch ($result->RespuestaRecepcionComprobante->estado) {
                 case VoucherStates::RECEIVED:
-                    // $this->moveXmlFile($shop, VoucherStates::RECEIVED);
                     $shop->state_retencion = VoucherStates::RECEIVED;
                     $shop->save();
                     $this->authorize($id);
@@ -65,7 +62,6 @@ class WSSriRetentionController
                     }
 
                     $shop->extra_detail_retention = substr($message, 0, 255);
-                    // $this->moveXmlFile($shop, VoucherStates::RETURNED);
                     $shop->state_retencion = VoucherStates::RETURNED;
                     $shop->save();
                     break;
@@ -134,6 +130,8 @@ class WSSriRetentionController
                     $shop->autorized_retention = $authorizationDate->format('Y-m-d H:i:s');
                     $shop->authorization_retention = $autorizacion->numeroAutorizacion;
                     $shop->save();
+                    
+                    (new MailController())->retentionMail($id);
                     break;
                 case VoucherStates::REJECTED:
                     $mensajes = json_decode(json_encode($autorizacion->mensajes), true);
@@ -227,7 +225,7 @@ class WSSriRetentionController
 
         $response = $soapClientValidation->autorizacionComprobante($user_param);
 
-        if ((int)$response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
+        if ((int) $response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
             $shop->state_retencion = VoucherStates::CANCELED;
             $shop->save();
             return response()->json(['state' => 'OK']);

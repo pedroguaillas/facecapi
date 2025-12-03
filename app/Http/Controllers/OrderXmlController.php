@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\Repayment;
+use App\Models\RepaymentTax;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Company;
@@ -24,7 +26,7 @@ class OrderXmlController extends Controller
         ]);
     }
 
-    public function xml($id)
+    public function xml($id, $send = true)
     {
         $auth = Auth::user();
         $level = $auth->companyusers->first();
@@ -60,10 +62,10 @@ class OrderXmlController extends Controller
                 break;
         }
 
-        $this->sign($company, $order, $str_xml_voucher);
+        $this->sign($company, $order, $str_xml_voucher, $send);
     }
 
-    private function sign($company, $order, $str_xml_voucher)
+    private function sign($company, $order, $str_xml_voucher, $send)
     {
         $order->authorization = substr($str_xml_voucher, strpos($str_xml_voucher, '<claveAcceso>') + 13, 49);
         $file = $order->authorization . '.xml';
@@ -98,7 +100,6 @@ class OrderXmlController extends Controller
 
             $newrootfile = Storage::path($rootfile);
 
-            // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
             $java_firma = "java -jar $public_path/public/Firma/dist/Firma.jar $cert " . $company->pass_cert . " $newrootfile/CREADO/$file $newrootfile/FIRMADO $file";
 
             system($java_firma);
@@ -111,7 +112,9 @@ class OrderXmlController extends Controller
                 Storage::delete($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SAVED . DIRECTORY_SEPARATOR . $file);
                 $order->save();
 
-                (new WSSriOrderController())->send($order->id);
+                if ($send) {
+                    (new WSSriOrderController())->send($order->id);
+                }
             }
         }
     }
@@ -273,6 +276,25 @@ class OrderXmlController extends Controller
         $string .= $order->address !== null ? '<direccionComprador>' . $order->address . '</direccionComprador>' : null;
         $string .= '<totalSinImpuestos>' . $order->sub_total . '</totalSinImpuestos>';
         $string .= '<totalDescuento>' . $order->discount . '</totalDescuento>';
+        
+        // Inicio Desembolso
+        $repayments = Repayment::selectRaw('repayments.id, type_id_prov, type_id_prov, identification, cod_country, type_prov, type_document, sequential, date, authorization, SUM(base) AS base, SUM(iva) AS iva')
+            ->join('repayment_taxes AS rt', 'repayments.id', 'repayment_id')
+            ->groupBy('id' ,'type_id_prov', 'type_id_prov', 'identification', 'cod_country', 'type_prov', 'type_document', 'sequential', 'date', 'authorization')
+            ->where('order_id',$order->id)
+            ->get();
+        
+        if($repayments->count()){
+            // Calcular totales
+            $totalBaseImponibleRembolso = $repayments->sum('base'); // o el nombre de tu columna
+            $totalImpuestoRembolso = $repayments->sum('iva'); // o el nombre de tu columna
+
+            $string .= '<codDocReemb>41</codDocReemb>';
+            $string .= '<totalComprobantesReembolso>' . number_format($totalBaseImponibleRembolso + $totalImpuestoRembolso,2) . '</totalComprobantesReembolso>';
+            $string .= '<totalBaseImponibleReembolso>' . number_format($totalBaseImponibleRembolso, 2) . '</totalBaseImponibleReembolso>';
+            $string .= '<totalImpuestoReembolso>' . number_format($totalImpuestoRembolso, 2) . '</totalImpuestoReembolso>';
+        }
+        // Fin Desembolso
 
         // Aplied only tax to IVA, NOT aplied to IRBPNR % Imp. al Cons Esp, require add
         $string .= '<totalConImpuestos>';
@@ -321,7 +343,7 @@ class OrderXmlController extends Controller
 
             $string .= "<codigoPrincipal>" . $detail->codeproduct . "</codigoPrincipal>";
             // El codigo aux obligatorio por el IVA 5%
-            $string .= $detail->iva === 5 ? "<codigoAuxiliar>" . $detail->aux_cod . "</codigoAuxiliar>" : null;
+            $string .= $detail->aux_cod ? "<codigoAuxiliar>" . $detail->aux_cod . "</codigoAuxiliar>" : null;
             $string .= "<descripcion>" . $detail->name . "</descripcion>";
             $string .= "<cantidad>" . round($detail->quantity, $company->decimal) . "</cantidad>";
             $string .= "<precioUnitario>" . round($detail->price, $company->decimal) . "</precioUnitario>";
@@ -356,6 +378,11 @@ class OrderXmlController extends Controller
         }
         $string .= '</detalles>';
 
+        // Items de rembolsos
+        if($repayments->count()){
+            $string .= $this->repayments($repayments);
+        }
+
         $orderaditionals = OrderAditional::where('order_id', $order->id)->get();
 
         if (count($orderaditionals)) {
@@ -369,8 +396,50 @@ class OrderXmlController extends Controller
         }
 
         $string .= '</factura>';
-
+        
         return $string;
+    }
+    
+    private function repayments($repayments){
+        
+        $result = '<reembolsos>';
+
+        foreach($repayments as $repayment){
+            $result .= '<reembolsoDetalle>';
+            $result .= '<tipoIdentificacionProveedorReembolso>0' . ($repayment->type_id_prov) . '</tipoIdentificacionProveedorReembolso>';
+            $result .= '<identificacionProveedorReembolso>' . $repayment->identification . '</identificacionProveedorReembolso>';
+            $result .= '<codPaisPagoProveedorReembolso>' . $repayment->cod_country . '</codPaisPagoProveedorReembolso>';
+            $result .= '<tipoProveedorReembolso>0' . $repayment->type_prov . '</tipoProveedorReembolso>';
+            $result .= '<codDocReembolso>0' . $repayment->type_document . '</codDocReembolso>';
+            $result .= '<estabDocReembolso>' . substr($repayment->sequential,0,3) . '</estabDocReembolso>';
+            $result .= '<ptoEmiDocReembolso>' . substr($repayment->sequential,4,3) . '</ptoEmiDocReembolso>';
+            $result .= '<secuencialDocReembolso>' . substr($repayment->sequential,8,9) . '</secuencialDocReembolso>';
+
+            $result .= '<fechaEmisionDocReembolso>' . date("d/m/Y", strtotime($repayment->date)) . '</fechaEmisionDocReembolso>';
+            $result .= '<numeroautorizacionDocReemb>' . $repayment->authorization . '</numeroautorizacionDocReemb>';
+            
+            $result .= '<detalleImpuestos>';
+            
+            $repaymentTaxes = RepaymentTax::select('iva_tax_code', 'base', 'iva', 'percentage')->where('repayment_id', $repayment->id)->get();
+
+            foreach($repaymentTaxes as $repaymentTax){
+                $result .= '<detalleImpuesto>';
+                $result .= '<codigo>2</codigo>';
+                $result .= '<codigoPorcentaje>' . $repaymentTax->iva_tax_code . '</codigoPorcentaje>';
+                $result .= '<tarifa>' . floatval($repaymentTax->percentage) . '</tarifa>';
+                $result .= '<baseImponibleReembolso>' . $repaymentTax->base . '</baseImponibleReembolso>';
+                $result .= '<impuestoReembolso>' . $repaymentTax->iva . '</impuestoReembolso>';
+                $result .= '</detalleImpuesto>';
+            }
+
+            $result .= '</detalleImpuestos>';
+
+            $result .= '</reembolsoDetalle>';
+        }
+
+        $result .= '</reembolsos>';
+
+        return $result;
     }
 
     public function grupingTaxes($order_items)
@@ -453,8 +522,8 @@ class OrderXmlController extends Controller
         $string .= '<infoTributaria>';
         $string .= '<ambiente>' . $company->enviroment_type . '</ambiente>';
         $string .= '<tipoEmision>1</tipoEmision>';
-        $string .= '<razonSocial>' . $company->company . '</razonSocial>';
-        $string .= $branch->name !== null ? '<nombreComercial>' . $branch->name . '</nombreComercial>' : null;
+        $string .= '<razonSocial>' . str_replace("&", "", $company->company) . '</razonSocial>';
+        $string .= $branch->name !== null ? '<nombreComercial>' . str_replace("&", "", $branch->name) . '</nombreComercial>' : null;
         $string .= '<ruc>' . $company->ruc . '</ruc>';
         $string .= '<claveAcceso>' . $keyaccess . $this->generaDigitoModulo11($keyaccess) . '</claveAcceso>';
         $string .= '<codDoc>' . $voucher_type . '</codDoc>';

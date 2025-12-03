@@ -3,9 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\CanBeCanceled;
 
 class Order extends Model
 {
+<<<<<<< HEAD
+=======
+    use CanBeCanceled;
+
+>>>>>>> main
     protected $fillable = [
         'branch_id', 'date',
         'description', 'sub_total',
@@ -56,6 +62,11 @@ class Order extends Model
     public function orderitems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function repayments()
+    {
+        return $this->hasMany(Repayment::class);
     }
 
     public function orderaditionals()

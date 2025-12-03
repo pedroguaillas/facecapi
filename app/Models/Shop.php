@@ -29,6 +29,21 @@ class Shop extends Model
         'base5', 'base15', 'iva5', 'iva15'
     ];
 
+    protected $casts = [
+        'no_iva' => 'float',
+        'base0' => 'float',
+        'base5' => 'float',
+        'base12' => 'float',
+        'base15' => 'float',
+        'iva5' => 'float',
+        'iva' => 'float',
+        'iva15' => 'float',
+        'discount' => 'float',
+        'ice' => 'float',
+        'sub_total' => 'float',
+        'total' => 'float',
+    ];
+
     public function shopitems()
     {
         return $this->hasMany(ShopItem::class);

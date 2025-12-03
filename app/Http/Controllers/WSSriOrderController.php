@@ -136,7 +136,8 @@ class WSSriOrderController
     {
         $lot = Lot::find($idLot);
 
-        if ($lot->state === VoucherStates::AUTHORIZED || $lot->state === VoucherStates::CANCELED) return;
+        if ($lot->state === VoucherStates::AUTHORIZED || $lot->state === VoucherStates::CANCELED)
+            return;
 
         $environment = substr($lot->authorization, 23, 1);
 
@@ -185,9 +186,27 @@ class WSSriOrderController
     public function authorize($id)
     {
         $order = Order::find($id);
+
+        if (!is_null($order->lot_id)) {
+            $lot = Lot::find($order->lot_id);
+
+            if ($lot->state === VoucherStates::AUTHORIZED || $lot->state === VoucherStates::CANCELED) {
+                return;
+            }
+            if ($lot->state === VoucherStates::SAVED) {
+                $this->sendLote($order->lot_id);
+                return;
+            }
+            if ($lot->state === VoucherStates::SENDED || $lot->state === VoucherStates::RECEIVED) {
+                $this->authorizedLot($order->lot_id);
+                return;
+            }
+        }
+
         $environment = substr($order->xml, -30, 1);
 
-        if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED) return;
+        if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED)
+            return;
 
         switch ((int) $environment) {
             case 1:
@@ -224,22 +243,23 @@ class WSSriOrderController
 
             $autorizacion = $response->RespuestaAutorizacionComprobante->autorizaciones->autorizacion;
             $this->saveResultAutorization($order, $autorizacion);
+            
         } catch (\Exception $e) {
             info(' CODE: ' . $e->getCode());
         }
     }
-
+    
     private function saveResultAutorization($order, $autorizacion)
     {
         switch ($autorizacion->estado) {
             case VoucherStates::AUTHORIZED:
                 $toPath = str_replace(VoucherStates::SIGNED, VoucherStates::AUTHORIZED, $order->xml);
                 $folder = substr($toPath, 0, strpos($toPath, VoucherStates::AUTHORIZED)) . VoucherStates::AUTHORIZED;
-
+                
                 if (!file_exists(Storage::path($folder))) {
                     Storage::makeDirectory($folder);
                 }
-
+                
                 Storage::put($toPath, $this->xmlautorized($autorizacion));
                 // Elimina el archivo FIRMADO
                 Storage::delete($order->xml);
@@ -247,6 +267,9 @@ class WSSriOrderController
                 $order->state = VoucherStates::AUTHORIZED;
                 $authorizationDate = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $autorizacion->fechaAutorizacion);
                 $order->autorized = $authorizationDate->format('Y-m-d H:i:s');
+                $order->save();
+                
+                (new MailController())->orderMail($order->id);
                 break;
             case VoucherStates::REJECTED:
                 $mensajes = json_decode(json_encode($autorizacion->mensajes), true);
@@ -258,12 +281,13 @@ class WSSriOrderController
 
                 $order->state = VoucherStates::REJECTED;
                 $order->extra_detail = substr($message, 0, 255);
+                $order->save();
                 break;
             default:
                 $order->state = VoucherStates::IN_PROCESS;
+                $order->save();
                 break;
         }
-        $order->save();
     }
 
     private function xmlautorized($comprobante)
@@ -300,6 +324,15 @@ class WSSriOrderController
     public function cancel(int $id)
     {
         $order = Order::find($id);
+
+        // Validar si se puede anular según la nueva ley (hasta el día 7 del mes siguiente)
+        // if (!$order->isCancelable($order->date)) {
+        //     return response()->json([
+        //         'state' => 'EXPIRED',
+        //         'message' => 'La anulación solo es válida dentro del mes de emisión y hasta el día 7 del mes siguiente.'
+        //     ], 422);
+        // }
+
         $environment = substr($order->xml, -30, 1);
 
         if ($order->state !== VoucherStates::AUTHORIZED) {
@@ -338,7 +371,7 @@ class WSSriOrderController
             return;
         }
 
-        if ((int)$response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
+        if ((int) $response->RespuestaAutorizacionComprobante->numeroComprobantes === 0) {
             $order->state = VoucherStates::CANCELED;
             $order->save();
             return response()->json(['state' => 'OK']);

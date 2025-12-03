@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Http\Controllers\OrderController;
+use App\Models\Customer;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Bus\Queueable;
@@ -46,7 +47,7 @@ class OrderShipped extends Mailable
 
         return $this->from($auth->email)
             ->subject(($this->order->voucher_type == 1 ? 'FACTURA ' : 'NOTA DE CRÉDITO ') . $this->order->serie . ' de ' . $company->company)
-            ->view('mail')
+            ->view('mail', ['title' => 'FACTURA ' . $this->order->serie, 'customer' => Customer::find($this->order->customer_id)->name])
             ->attachFromStorage(
                 str_replace('.xml', '.pdf', $this->order->xml),
                 ($this->order->voucher_type == 1 ? 'FAC-' : 'NC-') . $this->order->serie . '.pdf',

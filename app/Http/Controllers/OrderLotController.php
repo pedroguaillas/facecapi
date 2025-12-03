@@ -125,6 +125,7 @@ class OrderLotController extends Controller
                 'customer_id' => $customer[0]->id,
                 'lot_id' => $lot->id,
                 'total' => $subTotal + $iva,
+                'pay_method' => $company->pay_method,
             ];
 
             $input['base' . $product->percentage] = $subTotal;
@@ -153,7 +154,7 @@ class OrderLotController extends Controller
         // Firmar
         $orderXmlController = new OrderXmlController();
         foreach ($orders as $item) {
-            $orderXmlController->xml($item->id);
+            $orderXmlController->xml($item->id, false);
         }
 
         // Crea Lote

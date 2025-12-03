@@ -22,6 +22,13 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 
 $router->group(['middleware' => 'jwt.verify'], function ($router) {
 
+    // Admin
+    $router->get('admin/companies', 'Admin\CompanyController@index');
+    $router->get('admin/companies/sri/{identification}', 'Admin\CompanyController@searchByRuc');
+    $router->post('admin/companies', 'Admin\CompanyController@store');
+    $router->get('admin/companies/{id}/edit', 'Admin\CompanyController@edit');
+    $router->put('admin/companies/{id}', 'Admin\CompanyController@update');
+
     // me
     $router->get('me', 'AuthController@me');
 
@@ -48,37 +55,6 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->post('points/store', 'EmisionPointController@store');
     $router->put('points/update/{id}', 'EmisionPointController@update');
 
-    // Categories
-    // $router->get('categories', 'CategoryController@index');
-    // $router->post('categories', 'CategoryController@store');
-    // $router->get('categories/{id}', 'CategoryController@show');
-    // $router->put('categories/{id}', 'CategoryController@update');
-    // $router->delete('categories/{id}', 'CategoryController@destroy');
-
-    // // Unity
-    // $router->get('unities', 'UnityController@index');
-    // $router->post('unities', 'UnityController@store');
-
-    // // Account
-    // $router->get('chartaccounts', 'ChartAccountController@index');
-    // $router->get('chartaccountspdf', 'ChartAccountController@indexPdf');
-    // $router->post('chartaccounts', 'ChartAccountController@store');
-
-    // // Ledger
-    // $router->get('chartaccountsledger', 'ChartAccountController@ledger');
-    // $router->get('balancepurchase', 'ChartAccountController@balancepurchase');
-    // $router->get('balanceSheet', 'ChartAccountController@balanceSheet');
-    // $router->get('balanceSheetPdf/{level}', 'ChartAccountController@balanceSheetPdf');
-    // $router->get('resultState', 'ChartAccountController@resultState');
-    // $router->get('resultStatePdf/{level}', 'ChartAccountController@resultStatePdf');
-
-    // // Start Account Entries .....
-    // // Diary Book
-    // $router->get('accountentries', 'AccountEntryController@index');
-    // // Register a new account entry
-    // $router->post('accountentries', 'AccountEntryController@store');
-    // End Account Entries .....
-
     //Products
     $router->post('productlist', 'ProductController@productlist');
     $router->get('product/create', 'ProductController@create');
@@ -88,6 +64,7 @@ $router->group(['middleware' => 'jwt.verify'], function ($router) {
     $router->post('products/import', 'ProductController@import');
     $router->get('products/export', 'ProductController@export');
     $router->post('products/getmasive', 'ProductController@getmasive');
+    $router->delete('products/{id}', 'ProductController@destroy');
 
     //orders
     $router->post('orderlist', 'OrderController@orderlist');

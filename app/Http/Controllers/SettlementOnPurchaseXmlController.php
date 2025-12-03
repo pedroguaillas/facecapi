@@ -82,12 +82,8 @@ class SettlementOnPurchaseXmlController extends Controller
                 Storage::makeDirectory($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED);
             }
 
-            // $rootfile = Storage::path($rootfile);
             $newrootfile = Storage::path($rootfile);
-
-            // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
             $java_firma = "java -jar $public_path/public/Firma/dist/Firma.jar $cert $company->pass_cert $newrootfile/CREADO/$file $newrootfile/FIRMADO $file";
-
             $variable = system($java_firma);
 
             // Si se creo el archivo FIRMADO entonces guardar estado FIRMADO Y el nuevo path XML
@@ -259,52 +255,6 @@ class SettlementOnPurchaseXmlController extends Controller
         return $result;
     }
 
-    // public function grupingTaxes($order_items)
-    // {
-    //     $taxes = array();
-    //     foreach ($order_items as $tax) {
-    //         $sub_total = number_format($tax->quantity * $tax->price, 2, '.', '');
-    //         $discount = round($sub_total * $tax->discount * .01, 2);
-    //         $total = $sub_total - $discount;
-    //         $percentage = $tax->iva === 2 ? 12 : 0;
-
-    //         $gruping = $this->grupingExist($taxes, $tax);
-    //         if ($gruping !== -1) {
-    //             $aux2 = $taxes[$gruping];
-    //             $aux2->base += $total;
-    //             $aux2->value += round($percentage * $total * .01, 2);
-    //         } else {
-    //             $aux = [
-    //                 'percentageCode' => $tax->iva,
-    //                 'percentage' => $percentage,
-    //                 'base' => $total,
-    //                 'value' => round($percentage * $total * .01, 2)
-    //             ];
-    //             $aux = json_encode($aux);
-    //             $aux = json_decode($aux);
-    //             $taxes[] = $aux;
-    //         }
-    //     }
-
-    //     return $taxes;
-    // }
-
-    // private function grupingExist($taxes, $tax)
-    // {
-    //     $result = -1;
-    //     $i = 0;
-    //     while ($i < count($taxes) && $result == -1) {
-    //         if (
-    //             $taxes[$i]->percentageCode === $tax->iva
-    //             // && $taxes[$i]->percentage === $tax->percentage
-    //         ) {
-    //             $result = $i;
-    //         }
-    //         $i++;
-    //     }
-    //     return $result;
-    // }
-
     private function infoTributaria($company, $order)
     {
         $branch = Branch::where('company_id', $company->id)
@@ -334,6 +284,7 @@ class SettlementOnPurchaseXmlController extends Controller
 
         $string .= (int) $company->retention_agent === 1 ? '<agenteRetencion>1</agenteRetencion>' : null;
         $string .= (int) $company->rimpe === 1 ? '<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
+        $string .= (int) $company->rimpe === 2 ? '<contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
 
         $string .= '</infoTributaria>';
 

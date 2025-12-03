@@ -58,8 +58,8 @@ class Branch extends Model
         return $this->hasMany(Unity::class);
     }
 
-    public function chartaccounts()
-    {
-        return $this->hasMany(ChartAccount::class);
-    }
+    // public function chartaccounts()
+    // {
+    //     return $this->hasMany(ChartAccount::class);
+    // }
 }

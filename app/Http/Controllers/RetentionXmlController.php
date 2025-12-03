@@ -79,12 +79,8 @@ class RetentionXmlController extends Controller
                 Storage::makeDirectory($rootfile . DIRECTORY_SEPARATOR . VoucherStates::SIGNED);
             }
 
-            // $rootfile = Storage::path($rootfile);
             $newrootfile = Storage::path($rootfile);
-
-            // $java_firma = "java -jar public\Firma\dist\Firma.jar $cert $company->pass_cert $rootfile\\CREADO\\$file $rootfile\\FIRMADO $file";
             $java_firma = "java -jar $public_path/public/Firma/dist/Firma.jar $cert $company->pass_cert $newrootfile/CREADO/$file $newrootfile/FIRMADO $file";
-
             $variable = system($java_firma);
 
             // Si se creo el archivo FIRMADO entonces guardar estado FIRMADO Y el nuevo path XML
@@ -120,11 +116,12 @@ class RetentionXmlController extends Controller
         $string .= '<comprobanteRetencion id="comprobante" version="2.0.0">';
 
         $string .= $this->infoTributaria($company, $shop);
+        
+        $date = new \DateTime($shop->date);
 
         $string .= '<infoCompRetencion>';
 
-        $date = new \DateTime($shop->date_retention);
-        $string .= '<fechaEmision>' . $date->format('d/m/Y') . '</fechaEmision>';
+        $string .= '<fechaEmision>' . (new \DateTime($shop->date_retention))->format('d/m/Y') . '</fechaEmision>';
         $string .= '<obligadoContabilidad>' . ($company->accounting ? 'SI' : 'NO') . '</obligadoContabilidad>';
         $string .= "<tipoIdentificacionSujetoRetenido>$typeId</tipoIdentificacionSujetoRetenido>";
         $string .= $typeId === 'pasaporte' ? '<tipoSujetoRetenido>01</tipoSujetoRetenido>' : null;
@@ -143,7 +140,7 @@ class RetentionXmlController extends Controller
         // 01 Factura, 02 Nota de Venta, 03 Liquidacion en compra
         $string .= "<codDocSustento>" . str_pad($shop->voucher_type, 2, '0', STR_PAD_LEFT) . "</codDocSustento>";
         $string .= "<numDocSustento>" . str_replace('-', '', $shop->serie) . "</numDocSustento>";
-        $string .= "<fechaEmisionDocSustento>" . (new \DateTime($shop->date))->format('d/m/Y') . "</fechaEmisionDocSustento>";
+        $string .= "<fechaEmisionDocSustento>" . $date->format('d/m/Y') . "</fechaEmisionDocSustento>";
         $string .= "<pagoLocExt>01</pagoLocExt>";
         $string .= "<totalSinImpuestos>0.00</totalSinImpuestos>";
         $string .= "<importeTotal>$shop->total</importeTotal>";
@@ -228,6 +225,7 @@ class RetentionXmlController extends Controller
 
         $string .= (int)$company->retention_agent === 1 ? '<agenteRetencion>1</agenteRetencion>' : null;
         $string .= (int)$company->rimpe === 1 ? '<contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
+        $string .= (int) $company->rimpe === 2 ? '<contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</contribuyenteRimpe>' : null;
 
         $string .= '</infoTributaria>';
 

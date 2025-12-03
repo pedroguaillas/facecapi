@@ -11,6 +11,13 @@ class ShopItem extends Model
         'quantity', 'price', 'discount'
     ];
 
+    protected $casts = [
+        'iva' => 'float',
+        'price' => 'float',
+        'discount' => 'float',
+        'quantity' => 'float',
+    ];
+
     /**
      * Get the post that owns the comment.
      */

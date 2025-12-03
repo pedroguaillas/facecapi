@@ -19,6 +19,10 @@ class MailController extends Controller
         $order = Order::find($id);
         $customer = Customer::find($order->customer_id);
 
+        if (is_null($customer->email)) {
+            return;
+        }
+
         Mail::to($customer->email)->send(new OrderShipped($order));
 
         $order->update([
@@ -34,6 +38,10 @@ class MailController extends Controller
     {
         $shop = Shop::find($id);
         $provider = Provider::find($shop->provider_id);
+
+        if (is_null($provider->email)) {
+            return;
+        }
 
         Mail::to($provider->email)->send(new RetentionShipped($shop));
 

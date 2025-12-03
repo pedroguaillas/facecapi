@@ -14,6 +14,11 @@
                             <td class="relleno">Fecha de Emisión: {{ date("d/m/Y", strtotime($movement->date)) }}</td>
                             @if($movement->guia)
                                 <td class="align-middle">Guia de Remisión: {{ $movement->guia }}</td>
+<<<<<<< HEAD
+=======
+                            @elseif($movement->email)
+                                <td class="align-middle">Correo: {{ $movement->email }}</td>
+>>>>>>> main
                             @endif
                         </tr>
                         <tr>
@@ -58,7 +63,12 @@
                                 <td style="text-align: right; width: 5em;">{{ number_format($item->discount, 2) }}</td>
                             @endif
                             <td style="text-align: right; width: 5em;">
+<<<<<<< HEAD
                                 {{ number_format($item->quantity * $item->price - $item->discount, 2) }}</td>
+=======
+                                {{ number_format($item->quantity * $item->price - $item->discount, 2) }}
+                            </td>
+>>>>>>> main
                         </tr>
                     </tbody>
                 </table>
@@ -78,4 +88,37 @@
             </tr>
         </tbody>
     </table>
+<<<<<<< HEAD
+=======
+
+    @if($repayments->count() > 0)
+        <table style="width: 100%; border-radius: 10px; margin-top: .5em;" class="table-collapse">
+            <thead>
+                <tr>
+                    <th colspan="6">FACTURAS REEMBOLSADAS</th>
+                </tr>
+                <tr>
+                    <th>Identificación</th>
+                    <th>Secuencia</th>
+                    <th>Fecha</th>
+                    <th>Base Imp</th>
+                    <th>IVA</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($repayments as $repayment)
+                    <tr>
+                        <td style="text-align: center;">{{ $repayment->identification }}</td>
+                        <td style="text-align: center;">{{ $repayment->sequential }}</td>
+                        <td style="text-align: center;">{{ date("d/m/Y", strtotime($repayment->date)) }}</td>
+                        <td style="text-align: right;">{{ number_format($repayment->base, 2) }}</td>
+                        <td style="text-align: right;">{{ number_format($repayment->iva, 2) }}</td>
+                        <th style="text-align: right;">{{ number_format($repayment->base + $repayment->iva, 2) }}</th>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+>>>>>>> main
 @endsection

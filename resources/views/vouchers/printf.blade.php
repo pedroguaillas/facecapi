@@ -37,6 +37,7 @@
     <strong>Factura: {{ $movement->serie }}</strong>
     <div>CLAVE DE ACCESO / AUTORIZACION</div>
     <div>{{ $movement->authorization }}</div>
+    <div>Fecha: {{ $movement->date }}</div>
     <div>------------------------------------------------------------------------------------</div>
     <strong>CLIENTE</strong>
     <div>Identificación: {{ $movement->identication }}</div>
