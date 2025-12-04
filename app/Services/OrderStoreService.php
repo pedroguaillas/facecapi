@@ -2,12 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\IvaTax;
-use App\Models\Order;
-use App\Models\Customer;
-use App\Models\Company;
-use App\Models\Branch;
-use App\Models\EmisionPoint;
+use App\Models\{Branch, Company, Customer, EmisionPoint, IvaTax, Order};
 use App\Http\Controllers\OrderXmlController;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -15,9 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrderStoreService
 {
-    /**
-     * Crear una nueva orden de venta
-     */
     public function createOrder(array $data): Order
     {
         $orderSaved = DB::transaction(function () use ($data) {

@@ -2,8 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Order;
-use App\Models\{Company, Branch, MethodOfPayment, Repayment, OrderItem, OrderAditional};
+use App\Models\{Company, Branch, MethodOfPayment, Repayment, Order, OrderItem, OrderAditional};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
@@ -30,6 +29,8 @@ class OrderPdfService
 
         $auth = Auth::user();
         $company = Company::find($auth->companyusers->first()->level_id);
+        $company->logo_dir = $company->logo_dir ?: 'default.png';
+
         $branch = Branch::where([
             'company_id' => $company->id,
             'store' => (int) substr($movement->serie, 0, 3),
@@ -50,23 +51,11 @@ class OrderPdfService
                 ->groupBy('identification', 'sequential', 'date')
                 ->get();
 
-            // $pdf = Pdf::loadView('vouchers.invoice', compact(
-            //     'company', 'branch', 'movement',
-            //     'movement_items', 'orderaditionals',
-            //     'after', 'payMethod', 'repayments'
-            // ));
-
             $pdf = app('dompdf.wrapper')->loadView(
                 'vouchers.invoice',
                 compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod', 'repayments')
             );
-
         } else {
-            // $pdf = Pdf::loadView('vouchers/creditnote', compact(
-            //     'company', 'branch', 'movement',
-            //     'movement_items', 'orderaditionals', 'after'
-            // ));
-
             $pdf = app('dompdf.wrapper')->loadView(
                 'vouchers.creditnote',
                 compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount')
