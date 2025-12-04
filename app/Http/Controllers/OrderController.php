@@ -13,15 +13,17 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Http\JsonResponse;
-use App\Services\OrderStoreService;
+use App\Services\{OrderStoreService,OrderPdfService};
 
 class OrderController extends Controller
 {
     protected $orderStoreService;
+    protected $orderPdfService;
 
-    public function __construct(OrderStoreService $orderStoreService)
+    public function __construct(OrderStoreService $orderStoreService,OrderPdfService $orderPdfService)
     {
         $this->orderStoreService = $orderStoreService;
+        $this->orderPdfService = $orderPdfService;
     }
     
     public function orderlist(Request $request)
@@ -166,82 +168,84 @@ class OrderController extends Controller
         ]);
     }
 
-    protected function buildPdf(int $id)
-    {
-        $movement = Order::join('customers AS c', 'c.id', 'customer_id')
-            ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
-            ->where('orders.id', $id)
-            ->firstOrFail();
+    // protected function buildPdf(int $id)
+    // {
+    //     $movement = Order::join('customers AS c', 'c.id', 'customer_id')
+    //         ->select('orders.*', 'c.identication', 'c.name', 'c.address', 'c.email')
+    //         ->where('orders.id', $id)
+    //         ->firstOrFail();
 
-        $after = false;
-        $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
+    //     $after = false;
+    //     $dateToCheck = Carbon::parse($movement->voucher_type == 4 ? $movement->date_order : $movement->date);
 
-        if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
-            $after = true;
-        }
+    //     if ($dateToCheck->isBefore(Carbon::parse('2024-04-01'))) {
+    //         $after = true;
+    //     }
 
-        $movement_items = OrderItem::join('products', 'products.id', 'product_id')
-            ->select('products.*', 'order_items.*')
-            ->where('order_id', $id)
-            ->get();
+    //     $movement_items = OrderItem::join('products', 'products.id', 'product_id')
+    //         ->select('products.*', 'order_items.*')
+    //         ->where('order_id', $id)
+    //         ->get();
 
-        $enabledDiscount = $movement_items->contains(fn($item) => $item->discount > 0);
+    //     $enabledDiscount = $movement_items->contains(fn($item) => $item->discount > 0);
 
-        $orderaditionals = OrderAditional::where('order_id', $id)->get();
+    //     $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
-        $auth = Auth::user();
-        $level = $auth->companyusers->first();
-        $company = Company::find($level->level_id);
-        $company->logo_dir = $company->logo_dir ?: 'default.png';
+    //     $auth = Auth::user();
+    //     $level = $auth->companyusers->first();
+    //     $company = Company::find($level->level_id);
+    //     $company->logo_dir = $company->logo_dir ?: 'default.png';
 
-        $branch = Branch::where([
-            'company_id' => $company->id,
-            'store' => (int) substr($movement->serie, 0, 3),
-        ])->get();
+    //     $branch = Branch::where([
+    //         'company_id' => $company->id,
+    //         'store' => (int) substr($movement->serie, 0, 3),
+    //     ])->get();
 
-        if ($branch->count() === 0) {
-            $branch = Branch::where('company_id', $company->id)
-                ->orderBy('created_at')->first();
-        } elseif ($branch->count() === 1) {
-            $branch = $branch->first();
-        }
+    //     if ($branch->count() === 0) {
+    //         $branch = Branch::where('company_id', $company->id)
+    //             ->orderBy('created_at')->first();
+    //     } elseif ($branch->count() === 1) {
+    //         $branch = $branch->first();
+    //     }
 
-        switch ($movement->voucher_type) {
-            case 1:
-                $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
-                $repayments = Repayment::selectRaw('identification, sequential, date, SUM(base) AS base, SUM(iva) AS iva')
-                    ->join('repayment_taxes AS rt', 'repayments.id', 'repayment_id')
-                    ->groupBy('identification', 'sequential', 'date')
-                    ->where('order_id', $id)
-                    ->get();
+    //     switch ($movement->voucher_type) {
+    //         case 1:
+    //             $payMethod = MethodOfPayment::where('code', $movement->pay_method)->first()->description;
+    //             $repayments = Repayment::selectRaw('identification, sequential, date, SUM(base) AS base, SUM(iva) AS iva')
+    //                 ->join('repayment_taxes AS rt', 'repayments.id', 'repayment_id')
+    //                 ->groupBy('identification', 'sequential', 'date')
+    //                 ->where('order_id', $id)
+    //                 ->get();
 
-                $pdf = Pdf::loadView(
-                    'vouchers/invoice', 
-                    compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod', 'repayments')
-                );
-                break;
-            case 4:
-                $pdf = Pdf::loadView(
-                    'vouchers/creditnote', 
-                    compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount')
-                );
-                break;
-            default:
-                throw new \Exception("Tipo de comprobante no soportado");
-        }
+    //             $pdf = Pdf::loadView(
+    //                 'vouchers/invoice', 
+    //                 compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod', 'repayments')
+    //             );
+    //             break;
+    //         case 4:
+    //             $pdf = Pdf::loadView(
+    //                 'vouchers/creditnote', 
+    //                 compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount')
+    //             );
+    //             break;
+    //         default:
+    //             throw new \Exception("Tipo de comprobante no soportado");
+    //     }
 
-        return [$pdf, $movement];
-    }
+    //     return [$pdf, $movement];
+    // }
 
     public function generatePdf($id)
     {
-        [$pdf, $movement] = $this->buildPdf($id);
-        $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
+        $this->orderPdfService->savePdf($id);
+        // [$pdf, $movement] = $this->buildPdf($id);
+        // $pdf->save(Storage::path(str_replace('.xml', '.pdf', $movement->xml)));
     }
 
     public function showPdf($id)
     {
-        [$pdf] = $this->buildPdf($id);
+        [$pdf] = $this->orderPdfService->buildPdf($id);
+        // [$pdf] = $this->buildPdf($id);
         return $pdf->stream();
     }
 

@@ -10,6 +10,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use App\Models\Company;
 use App\Models\Order;
+use App\Services\OrderPdfService;
 
 class OrderShipped extends Mailable
 {
@@ -43,7 +44,8 @@ class OrderShipped extends Mailable
         $level = $auth->companyusers->first();
         $company = Company::find($level->level_id);
 
-        (new OrderController())->generatePdf($this->order->id);
+        // (new OrderController())->generatePdf($this->order->id);
+        app(OrderPdfService::class)->savePdf($this->order->id);
 
         return $this->from($auth->email)
             ->subject(($this->order->voucher_type == 1 ? 'FACTURA ' : 'NOTA DE CRÉDITO ') . $this->order->serie . ' de ' . $company->company)
