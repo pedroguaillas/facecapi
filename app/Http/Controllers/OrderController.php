@@ -92,7 +92,7 @@ class OrderController extends Controller
         $this->validate($request, [
             'customer_id' => 'required|integer|exists:customers,id',
             'total' => 'required|numeric',
-            'voucher_type' => 'required|integer|in:1,2',
+            'voucher_type' => 'required|integer|in:1,4',
             'point_id' => 'required|integer|exists:emision_points,id',
         ], [
             'customer_id.required' => 'Debe seleccionar un cliente',
