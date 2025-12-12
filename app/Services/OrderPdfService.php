@@ -3,8 +3,7 @@
 namespace App\Services;
 
 use App\Models\{Company, Branch, MethodOfPayment, Repayment, Order, OrderItem, OrderAditional};
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\{Auth, Storage};
 use Carbon\Carbon;
 
 class OrderPdfService
@@ -25,6 +24,7 @@ class OrderPdfService
         ->where('order_id', $id)
         ->get();
         $enabledDiscount = $movement_items->contains(fn($item) => $item->discount > 0);
+        $enabledCodeAux = $movement_items->contains(fn($item) => $item->aux_cod !== null);
         $orderaditionals = OrderAditional::where('order_id', $id)->get();
 
         $auth = Auth::user();
@@ -53,7 +53,7 @@ class OrderPdfService
 
             $pdf = app('dompdf.wrapper')->loadView(
                 'vouchers.invoice',
-                compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'payMethod', 'repayments')
+                compact('company', 'branch', 'movement', 'movement_items', 'orderaditionals', 'after', 'enabledDiscount', 'enabledCodeAux', 'payMethod', 'repayments')
             );
         } else {
             $pdf = app('dompdf.wrapper')->loadView(

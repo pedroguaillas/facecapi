@@ -32,9 +32,12 @@
                 <tbody>
                     <tr>
                         <th style="width: 5em;">Código</th>
+                        @if($enabledCodeAux)
+                            <th style="width: 5em;">Cod Aux</th>
+                        @endif
                         <th style="width: 4em;">Cant.</th>
                         <th>Descripción</th>
-                        <th style="width: 5em;">Precio Unitario</th>
+                        <th style="width: 5em;">Precio</th>
                         @if($enabledDiscount)
                             <th style="width: 5em;">Descuento</th>
                         @endif
@@ -51,8 +54,10 @@
                 <table style="width: 100%;" class="table-collapse">
                     <tbody>
                         <tr>
-                            <td style="text-align: center; width: 5em;">{{ $item->iva == 5 ? $item->aux_cod : $item->code }}
-                            </td>
+                            <td style="text-align: center; width: 5em;">{{ $item->code }}</td>
+                            @if($enabledCodeAux)
+                                <td style="text-align: center; width: 5em;">{{ $item->aux_cod }}</td>
+                            @endif
                             <td style="text-align: center; width: 4em;">{{ floatval($item->quantity) }}</td>
                             <td>{{ $item->name }}</td>
                             <td style="text-align: right; width: 5em;">{{ number_format($item->price, $company->decimal) }}</td>
