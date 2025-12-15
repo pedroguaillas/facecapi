@@ -289,7 +289,7 @@ class OrderXmlController extends Controller
             $totalBaseImponibleRembolso = $repayments->sum('base'); // o el nombre de tu columna
             $totalImpuestoRembolso = $repayments->sum('iva'); // o el nombre de tu columna
 
-            $string .= ($company->decimal > 2 ? '<codDocReembolso>41</codDocReembolso>' : '<codDocReemb>41</codDocReemb>');
+            $string .= '<codDocReembolso>41</codDocReembolso>';
             $string .= '<totalComprobantesReembolso>' . number_format($totalBaseImponibleRembolso + $totalImpuestoRembolso,2) . '</totalComprobantesReembolso>';
             $string .= '<totalBaseImponibleReembolso>' . number_format($totalBaseImponibleRembolso, 2) . '</totalBaseImponibleReembolso>';
             $string .= '<totalImpuestoReembolso>' . number_format($totalImpuestoRembolso, 2) . '</totalImpuestoReembolso>';
