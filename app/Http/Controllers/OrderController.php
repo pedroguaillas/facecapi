@@ -217,7 +217,7 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
 
-        if ($order->state === VoucherStates::AUTHORIZED || $order->state === VoucherStates::CANCELED)
+        if (in_array($order->state, [VoucherStates::SENDED, VoucherStates::RECEIVED, VoucherStates::IN_PROCESS, VoucherStates::AUTHORIZED, VoucherStates::CANCELED]))
             return;
 
         if ($order->update([

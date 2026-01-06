@@ -349,7 +349,8 @@ class ShopController extends Controller
     {
         $shop = Shop::find($id);
 
-        if ($shop->state === VoucherStates::AUTHORIZED || $shop->state_retencion === VoucherStates::AUTHORIZED){
+        if (in_array($shop->state, [VoucherStates::SENDED, VoucherStates::RECEIVED, VoucherStates::IN_PROCESS, VoucherStates::AUTHORIZED, VoucherStates::CANCELED]) ||
+            in_array($shop->state_retencion, [VoucherStates::SENDED, VoucherStates::RECEIVED, VoucherStates::IN_PROCESS, VoucherStates::AUTHORIZED, VoucherStates::CANCELED])){
             return new JsonResponse([
                 'message' => 'Retención modificada con éxito.',
                 'data' => $shop

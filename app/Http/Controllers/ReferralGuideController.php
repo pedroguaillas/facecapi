@@ -17,6 +17,7 @@ use App\Models\ReferralGuide;
 use App\Models\ReferralGuideItem;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\StaticClasses\VoucherStates;
 
 class ReferralGuideController extends Controller
 {
@@ -178,6 +179,9 @@ class ReferralGuideController extends Controller
     public function update(Request $request, $id)
     {
         $referralguide = ReferralGuide::findOrFail($id);
+
+        if (in_array($referralguide->state, [VoucherStates::SENDED, VoucherStates::RECEIVED, VoucherStates::IN_PROCESS, VoucherStates::AUTHORIZED, VoucherStates::CANCELED]))
+            return;
 
         if ($referralguide->update($request->except(['products', 'send']))) {
             $products = $request->get('products');
