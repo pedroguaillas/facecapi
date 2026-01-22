@@ -34,6 +34,7 @@ class WSSriOrderController
             $order->save();
             
             (new OrderXmlController())->xml($order->id);
+            return;
         }
 
         $options = array(
