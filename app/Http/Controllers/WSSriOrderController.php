@@ -6,6 +6,7 @@ use App\Models\Lot;
 use App\StaticClasses\VoucherStates;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Order;
+use Carbon\Carbon;
 
 class WSSriOrderController
 {
@@ -21,6 +22,17 @@ class WSSriOrderController
             case 2:
                 $wsdlReceipt = 'https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl';
                 break;
+        }
+
+        $dateNow = Carbon::now();
+        // Si es ambiente 2 y la fecha actual es mayor a la fecha del comprobante, se actualiza la fecha del comprobante
+        if(((int) $environment) === 2 && $dateNow->isAfter(Carbon::parse($order->date))) {
+            $order->date = $dateNow->format('Y-m-d');
+            $order->state = VoucherStates::SAVED;
+            $order->save();
+            
+            return;
+            // (new OrderXmlController())->xml($order->id);
         }
 
         $options = array(
