@@ -25,14 +25,15 @@ class WSSriOrderController
         }
 
         $dateNow = Carbon::now();
+        $dateOrden = Carbon::parse($order->date);
+        $diffDays = $dateNow->diffInDays($dateOrden) >= 1;
         // Si es ambiente 2 y la fecha actual es mayor a la fecha del comprobante, se actualiza la fecha del comprobante
-        if(((int) $environment) === 2 && $dateNow->isAfter(Carbon::parse($order->date))) {
+        if(((int) $environment) === 2 && $diffDays) {
             $order->date = $dateNow->format('Y-m-d');
             $order->state = VoucherStates::SAVED;
             $order->save();
             
-            return;
-            // (new OrderXmlController())->xml($order->id);
+            (new OrderXmlController())->xml($order->id);
         }
 
         $options = array(
