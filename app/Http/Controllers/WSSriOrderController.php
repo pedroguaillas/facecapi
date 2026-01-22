@@ -33,7 +33,6 @@ class WSSriOrderController
             $order->state = VoucherStates::SAVED;
             $order->save();
             
-            (new OrderXmlController())->xml($order->id);
             return;
         }
 
